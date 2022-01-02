@@ -1,0 +1,4 @@
+
+o Oublier de mettre un mur avant de déplacer la moto
+o Dans la fonction gérant les parties parallèles, ne pas utiliser les mêmes directions que celles données dans dX/dY
+o Ecrire x = game.PlayerX, modifier x et ne jamais retransférer la nouvelle valeur de x vers game.PlayerX
