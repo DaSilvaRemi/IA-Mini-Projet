@@ -107,10 +107,10 @@ GUM = PlacementsGUM()
 PacManPos = [5, 5]
 
 Ghosts = []
-Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "pink"])
-Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "orange"])
-Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "cyan"])
-Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "red"])
+Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "pink", "UP"])
+Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "orange", "DOWN"])
+Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "cyan", "LEFT"])
+Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "red", "RIGHT"])
 
 
 ################################################################################
@@ -309,12 +309,18 @@ def PacManPossibleMove():
     return L
 
 
-def GhostsPossibleMove(x, y):
+def GhostsPossibleMove(x, y, direction):
     L = []
+    """"
     if (TBL[x][y - 1] == 2): L.append((0, -1))
     if (TBL[x][y + 1] == 2): L.append((0, 1))
     if (TBL[x + 1][y] == 2): L.append((1, 0))
     if (TBL[x - 1][y] == 2): L.append((-1, 0))
+    """
+    if direction == "UP": L.append((0, -1))
+    if direction == "DOWN": L.append((0, 1))
+    if direction == "RIGHT": L.append((1, 0))
+    if direction == "LEFT": L.append((-1, 0))
     return L
 
 
@@ -334,7 +340,7 @@ def IA():
 
     # deplacement Fantome
     for F in Ghosts:
-        L = GhostsPossibleMove(F[0], F[1])
+        L = GhostsPossibleMove(F[0], F[1], F[3])
         choix = random.randrange(len(L))
         F[0] += L[choix][0]
         F[1] += L[choix][1]
