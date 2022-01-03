@@ -103,8 +103,8 @@ def Affiche(Game):
    
     for x in range (LARGEUR):
        for y in range (HAUTEUR):
-           if Game.Grille[x,y] == 1  : DrawCase(x,y,"gray" )
-           if Game.Grille[x,y] == 2  : DrawCase(x,y,"cyan" )
+           if Game.GrilleGUM[x, y] == 1  : DrawCase(x, y, "gray")
+           if Game.GrilleGUM[x, y] == 2  : DrawCase(x, y, "cyan")
    
     
     # dessin de la moto
@@ -126,11 +126,11 @@ def Play(Game):
     x,y = Game.PlayerX, Game.PlayerY
     print(x,y)
 
-    Game.Grille[x,y] = 2  # laisse la trace de la moto
+    Game.GrilleGUM[x, y] = 2  # laisse la trace de la moto
 
     y += 1  # on essaye de bouger vers le haut
     
-    v = Game.Grille[x,y]
+    v = Game.GrilleGUM[x, y]
     
     if v > 0 :
         # collision détectée

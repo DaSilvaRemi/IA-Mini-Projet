@@ -78,7 +78,7 @@ nb = 5 # nb de parties
 def Simulate(Game):
 
     # on copie les datas de départ pour créer plusieurs parties en //
-    G      = np.tile(Game.Grille,(nb,1,1))
+    G      = np.tile(Game.GrilleGUM, (nb, 1, 1))
     X      = np.tile(Game.PlayerX,nb)
     Y      = np.tile(Game.PlayerY,nb)
     S      = np.tile(Game.Score,nb)

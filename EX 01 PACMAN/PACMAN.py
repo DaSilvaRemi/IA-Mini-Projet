@@ -104,7 +104,7 @@ def PlacementsGUM():  # placements des pacgums
 
 GUM = PlacementsGUM()
 
-PacManPos = [5, 5]
+PacManPos = [5, 6]
 
 Ghosts = []
 Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "pink", "UP"])
@@ -112,33 +112,23 @@ Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "orange", "DOWN"])
 Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "cyan", "LEFT"])
 Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "red", "RIGHT"])
 
+################################################################################
+#
+# Règle de jeu  et création de la carte des distances
+Score = 0
+
 
 ################################################################################
 #
-# Règle de jeu et création de la carte des distances
+# Fonction utils liste
 def IndexInList(liste, index) -> bool:
     return index < len(liste)
 
 
-def InitGrille() -> None:
-    for x in range(LARGEUR):
-        for y in range(HAUTEUR):
-            valTBL = TBL[x][y]
-            # 0 vide
-            # 1 mur
-            # 2 maison des fantomes (ils peuvent circuler mais pas pacman)
-            if valTBL != 1:
-                if GUM[x][y] == 0:
-                    Grille[x][y] = 100
-                else:
-                    Grille[x][y] = 0
-            else:
-                Grille[x][y] = 999
-
-
-def GetMinValueAroundACase(x, y) -> int:
+def GetMinValueAroundACase(Grille, x, y) -> int:
     """
     Retourne les valeurs minimum des cases voisine à partir de la position de la case passée paramètre
+    :param Grille:
     :param x: La position en Largeur
     :param y: La position en Hauteur
     :return: Le minimum des cases voisines, s'il ne trouve pas l'indice il retourne 999 (valeur des murs)
@@ -153,38 +143,105 @@ def GetMinValueAroundACase(x, y) -> int:
     return min(valCase1, valCase2, valCase3, valCase4)
 
 
-def CalculerValeurCasesGrille() -> bool:
+################################################################################
+#
+# Création de la carte des distances pour les GUM
+
+def InitGrilleGUM() -> None:
+    for x in range(LARGEUR):
+        for y in range(HAUTEUR):
+            valTBL = TBL[x][y]
+            # 0 vide
+            # 1 mur
+            # 2 maison des fantomes (ils peuvent circuler mais pas pacman)
+            if valTBL != 1:
+                if GUM[x][y] == 0:
+                    GrilleGUM[x][y] = 100
+                else:
+                    GrilleGUM[x][y] = 0
+            else:
+                GrilleGUM[x][y] = 999
+
+
+def CalculerValeurCasesGrilleGUM() -> bool:
     isMiseAjour = False
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             valTBL = TBL[x][y]
 
-            if valTBL == 1 or Grille[x][y] < 0:
+            if valTBL == 1 or GrilleGUM[x][y] < 0:
                 continue
 
             # Stocke les valeurs de la case courante et voisines
-            valCurrentCase = Grille[x][y]
-            valMin = GetMinValueAroundACase(x, y) + 1
+            valCurrentCase = GrilleGUM[x][y]
+            valMin = GetMinValueAroundACase(GrilleGUM, x, y) + 1
 
             if valMin < valCurrentCase:
-                Grille[x][y] = valMin
+                GrilleGUM[x][y] = valMin
                 isMiseAjour = True
 
     return isMiseAjour
 
 
-def UpdateGrille() -> None:
-    InitGrille()
-    GrilleIsMiseAJour = CalculerValeurCasesGrille()
+def UpdateGrilleGUM() -> None:
+    InitGrilleGUM()
+    GrilleGUMIsMiseAJour = CalculerValeurCasesGrilleGUM()
 
-    while GrilleIsMiseAJour:
-        GrilleIsMiseAJour = CalculerValeurCasesGrille()
+    while GrilleGUMIsMiseAJour:
+        GrilleGUMIsMiseAJour = CalculerValeurCasesGrilleGUM()
 
 
-Score = 0
-Grille = np.zeros(TBL.shape)
-InitGrille()
+GrilleGUM = np.zeros(TBL.shape)
+InitGrilleGUM()
+
+
+################################################################################
+#
+# Création de la carte des distances pour les GUM
+
+def InitGrilleGHOST() -> None:
+    global GrilleGHOST
+    GrilleGHOST = np.ones(TBL.shape)
+    GrilleGHOST.fill(999)
+
+    for G in Ghosts:
+        x = G[0]
+        y = G[1]
+        GrilleGHOST[x][y] = 0
+
+
+def CalculerValeurCasesGrilleGHOST() -> bool:
+    isMiseAjour = False
+
+    for x in range(LARGEUR):
+        for y in range(HAUTEUR):
+            valTBL = TBL[x][y]
+
+            if valTBL == 1 or GrilleGHOST[x][y] < 0:
+                continue
+
+            # Stocke les valeurs de la case courante et voisines
+            valCurrentCase = GrilleGHOST[x][y]
+            valMin = GetMinValueAroundACase(GrilleGHOST, x, y) + 1
+
+            if valMin < valCurrentCase:
+                GrilleGUM[x][y] = valMin
+                isMiseAjour = True
+
+    return isMiseAjour
+
+
+def UpdateGrilleGHOST() -> None:
+    InitGrilleGHOST()
+    GrilleGHOSTIsMiseAJour = CalculerValeurCasesGrilleGHOST()
+"""
+    while GrilleGHOSTIsMiseAJour:
+        GrilleGHOSTIsMiseAJour = CalculerValeurCasesGrilleGHOST()
+"""
+
+GrilleGHOST = np.ones(TBL.shape)
+InitGrilleGHOST()
 
 
 #################################################################
@@ -235,7 +292,7 @@ def Affiche():
                 xx = To(x)
                 yy = To(y)
                 e = 5
-                canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="orange")
+                #canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="orange")
 
     # extra info
     for x in range(LARGEUR):
@@ -243,15 +300,22 @@ def Affiche():
             xx = To(x)
             yy = To(y) + 10
             txt = "∞"
-            canvas.create_text(xx, yy, text=txt, fill="white", font=("Purisa", 8))
+            #canvas.create_text(xx, yy, text=txt, fill="white", font=("Purisa", 8))
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
-            if Grille[x][y] <= 100:
+            if GrilleGUM[x][y] <= 100:
                 xx = To(x)
                 yy = To(y) + 10
-                txt = Grille[x][y]
-                canvas.create_text(xx, yy, text=txt, fill="RED", font=("Purisa", 8))
+                txt = GrilleGUM[x][y]
+                #canvas.create_text(xx, yy, text=txt, fill="RED", font=("Purisa", 8))
+
+    for x in range(LARGEUR):
+        for y in range(HAUTEUR):
+            xx = To(x)
+            yy = To(y) + 10
+            txt = GrilleGHOST[x][y]
+            canvas.create_text(xx, yy, text=txt, fill="RED", font=("Purisa", 8))
 
     # dessine pacman
     xx = To(PacManPos[0])
@@ -300,12 +364,12 @@ def PacManPossibleMove():
     L = []
     x, y = PacManPos
 
-    valMin = GetMinValueAroundACase(x, y)
+    valMin = GetMinValueAroundACase(GrilleGUM, x, y)
 
-    if TBL[x][y - 1] == 0 and Grille[x][y - 1] == valMin: L.append((0, -1))
-    if TBL[x][y + 1] == 0 and Grille[x][y + 1] == valMin: L.append((0, 1))
-    if TBL[x + 1][y] == 0 and Grille[x + 1][y] == valMin: L.append((1, 0))
-    if TBL[x - 1][y] == 0 and Grille[x - 1][y] == valMin: L.append((-1, 0))
+    if TBL[x][y - 1] == 0 and GrilleGUM[x][y - 1] == valMin: L.append((0, -1))
+    if TBL[x][y + 1] == 0 and GrilleGUM[x][y + 1] == valMin: L.append((0, 1))
+    if TBL[x + 1][y] == 0 and GrilleGUM[x + 1][y] == valMin: L.append((1, 0))
+    if TBL[x - 1][y] == 0 and GrilleGUM[x - 1][y] == valMin: L.append((-1, 0))
     return L
 
 
@@ -366,8 +430,9 @@ def GhostMove(x, y, direction) -> tuple:
 
 
 def HasCollidedWithGhost() -> bool:
-    xpac, ypac = PacManPos
+    global PacManPos
 
+    xpac, ypac = PacManPos
     for G in Ghosts:
         xghost = G[0]
         yghost = G[1]
@@ -398,8 +463,9 @@ def IA():
         F[0] += L[0]
         F[1] += L[1]
 
-    UpdateGrille()
-    if(HasCollidedWithGhost()):
+    UpdateGrilleGUM()
+    UpdateGrilleGHOST()
+    if (HasCollidedWithGhost()):
         print("COLLISIOOOONN")
 
 

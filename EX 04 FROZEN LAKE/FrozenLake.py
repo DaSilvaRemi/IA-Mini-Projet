@@ -118,9 +118,9 @@ def Affiche(Game):
    
     for x in range (LARGEUR):
        for y in range (HAUTEUR):
-           if Game.Grille[x,y] == 0  : DrawCase(x,y,"cyan" )
-           if Game.Grille[x,y] == 1  : DrawCase(x,y,"blue" )
-           if Game.Grille[x,y] == 8  : DrawCase(x,y,"pink" )
+           if Game.GrilleGUM[x, y] == 0  : DrawCase(x, y, "cyan")
+           if Game.GrilleGUM[x, y] == 1  : DrawCase(x, y, "blue")
+           if Game.GrilleGUM[x, y] == 8  : DrawCase(x, y, "pink")
    
     DrawCase(Game.PlayerPos[0],Game.PlayerPos[1],"yellow" )
    
