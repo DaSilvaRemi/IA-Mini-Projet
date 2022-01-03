@@ -2,6 +2,7 @@ import tkinter as tk
 import random
 import time
 import numpy as np
+import copy
 
 
 Data = [   [1,1,1,1,1,1,1,1,1,1,1,1,1],
