@@ -2,6 +2,7 @@ import tkinter as tk
 import random
 import numpy as np
 import copy
+import random
 
 #################################################################################
 #
@@ -125,13 +126,86 @@ def AfficheScore(Game):
 
 # VOTRE CODE ICI
 
+def DirectionsPossibles(Game) -> list:
+    L = []
+    x, y = Game.PlayerX, Game.PlayerY
+
+    val1 = Game.Grille[x - 1][y]
+    val2 = Game.Grille[x + 1][y]
+    val3 = Game.Grille[x][y - 1]
+    val4 = Game.Grille[x][y + 1]
+
+    if (val1 == 0):
+        L.append((-1, 0))
+
+    if (val2 == 0):
+        L.append((1, 0))
+
+    if (val3 == 0):
+        L.append((0, -1))
+
+    if (val4 == 0):
+        L.append((0, 1))
+    return L
+
+
+def SimulationPartie(Game: Game) -> int:
+    while (True):
+        L = DirectionsPossibles(Game)
+        if len(L) == 0:
+            return Game.Score
+
+        choix = random.randrange(len(L))
+
+        x, y = Game.PlayerX, Game.PlayerY
+        Game.Grille[x, y] = 2  # laisse la trace de la moto
+
+        x += L[choix][0]
+        y += L[choix][1]
+
+        Game.PlayerX = x  # valide le déplacement
+        Game.PlayerY = y  # valide le déplacement
+        Game.Score += 1
+
+
+def MonteCarlo(Game: Game, nombreParties) -> int:
+    Total = 0
+    for i in range(0, nombreParties):
+        Game2 = Game.copy()
+        Total += SimulationPartie(Game2)
+    return Total
+
+
+def DeterminerCoupPlusPrometteur(Game, L) -> tuple:
+    ScorePlusPrometteur = 0
+    CoupPlusPrometteur = ()
+
+    for offset in L:
+        Game2 = Game.copy()
+        Game2.PlayerX += offset[0]
+        Game2.PlayerY += offset[1]
+        tmpScorePlusPrometteur = MonteCarlo(Game2, 100)
+
+        if (tmpScorePlusPrometteur > ScorePlusPrometteur):
+            CoupPlusPrometteur = offset
+            ScorePlusPrometteur = tmpScorePlusPrometteur
+    return CoupPlusPrometteur
+
+
 def Play(Game):
     x, y = Game.PlayerX, Game.PlayerY
     print(x, y)
 
     Game.Grille[x, y] = 2  # laisse la trace de la moto
 
-    y += 1  # on essaye de bouger vers le haut
+    LPlacementsPossible = DirectionsPossibles(Game)
+    if len(LPlacementsPossible) == 0:
+        # aucun déplacement possible
+        return True  # partie terminée
+    CoupsPlusPrometteur = DeterminerCoupPlusPrometteur(Game, LPlacementsPossible)
+
+    x += CoupsPlusPrometteur[0]
+    y += CoupsPlusPrometteur[1]
 
     v = Game.Grille[x, y]
 
@@ -157,7 +231,7 @@ def Partie():
         Affiche(CurrentGame)
         # rappelle la fonction Partie() dans 30ms
         # entre temps laisse l'OS réafficher l'interface
-        Window.after(1000, Partie)
+        Window.after(100, Partie)
     else:
         AfficheScore(CurrentGame)
 
