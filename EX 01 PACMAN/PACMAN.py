@@ -310,11 +310,14 @@ def PacManPossibleMove():
 
 
 def NbCheminVide(x, y) -> int:
+    # 0 vide
+    # 1 mur
+    # 2 maison des fantomes (ils peuvent circuler mais pas pacman)
     nbCheminVide = 0
-    if TBL[x][y - 1] == 1: nbCheminVide += 1
-    if TBL[x][y + 1] == 1: nbCheminVide += 1
-    if TBL[x + 1][y] == 1: nbCheminVide += 1
-    if TBL[x - 1][y] == 1: nbCheminVide += 1
+    if TBL[x][y - 1] != 1: nbCheminVide += 1
+    if TBL[x][y + 1] != 1: nbCheminVide += 1
+    if TBL[x + 1][y] != 1: nbCheminVide += 1
+    if TBL[x - 1][y] != 1: nbCheminVide += 1
     return nbCheminVide
 
 
@@ -323,27 +326,34 @@ def IsCroisement(x, y) -> bool:
 
 
 def IsTournant(x, y) -> bool:
-    return NbCheminVide(x, y) == 2
+    return (TBL[x][y - 1] == 1 or TBL[x][y + 1] == 1) and (TBL[x - 1][y] == 1 or TBL[x + 1][y] == 1)
 
 
-def GhostsPossibleMove(x, y):
+def GhostsPossibleMove(x, y) -> list:
     L = []
-    if (TBL[x][y - 1] == 2): L.append((0, -1))
-    if (TBL[x][y + 1] == 2): L.append((0, 1))
-    if (TBL[x + 1][y] == 2): L.append((1, 0))
-    if (TBL[x - 1][y] == 2): L.append((-1, 0))
+    if TBL[x][y - 1] != 1: L.append((0, -1))
+    if TBL[x][y + 1] != 1: L.append((0, 1))
+    if TBL[x + 1][y] != 1: L.append((1, 0))
+    if TBL[x - 1][y] != 1: L.append((-1, 0))
     return L
 
 
-def GhostMove(x, y, direction):
+def GetDirection(LDir) -> str:
+    if LDir == (0, -1):
+        return "UP"
+    elif LDir == (0, 1):
+        return "DOWN"
+    elif LDir == (1, 0):
+        return "RIGHT"
+    elif LDir == (-1, 0):
+        return "LEFT"
+
+
+def GhostMove(x, y, direction) -> tuple:
     L = []
     if IsCroisement(x, y) or IsTournant(x, y):
-        LGhostPossibleMove = GhostsPossibleMove(x, y)
-        choix = random.randrange(len(LGhostPossibleMove))
-
-        return LGhostPossibleMove[choix]
-
-    if direction == "UP":
+        L = GhostsPossibleMove(x, y)
+    elif direction == "UP":
         L.append((0, -1))
     elif direction == "DOWN":
         L.append((0, 1))
@@ -351,7 +361,20 @@ def GhostMove(x, y, direction):
         L.append((1, 0))
     elif direction == "LEFT":
         L.append((-1, 0))
-    return L
+    choix = random.randrange(len(L))
+    return L[choix]
+
+
+def HasCollidedWithGhost() -> bool:
+    xpac, ypac = PacManPos
+
+    for G in Ghosts:
+        xghost = G[0]
+        yghost = G[1]
+        if xghost == xpac and yghost == ypac:
+            return True
+
+    return False
 
 
 def IA():
@@ -371,12 +394,13 @@ def IA():
     # deplacement Fantome
     for F in Ghosts:
         L = GhostMove(F[0], F[1], F[3])
-        choix = random.randrange(len(L))
-        val = L[0][0]
-        F[0] += val
-        #F[1] += L[0][1]
+        F[3] = GetDirection(L)
+        F[0] += L[0]
+        F[1] += L[1]
 
     UpdateGrille()
+    if(HasCollidedWithGhost()):
+        print("COLLISIOOOONN")
 
 
 #################################################################
