@@ -159,6 +159,11 @@ def GetMaxValueAroundACase(Grille, x, y) -> int:
     valCase3 = Grille[x][y + 1] if IndexInList(Grille[x], y + 1) else defaultValueNotFound
     valCase4 = Grille[x][y - 1] if IndexInList(Grille[x], y - 1) else defaultValueNotFound
 
+    valCase1 = -1 if TBL[x + 1][y] == 1 else valCase1
+    valCase2 = -1 if TBL[x - 1][y] == 1 else valCase2
+    valCase3 = -1 if TBL[x][y + 1] == 1 else valCase3
+    valCase4 = -1 if TBL[x][y - 1] == 1 else valCase4
+
     return max(valCase1, valCase2, valCase3, valCase4)
 
 
@@ -398,18 +403,19 @@ def PacManPossibleMove():
     valMinGUM = GetMinValueAroundACase(GrilleGUM, x, y)
     UpdateModePacMan()
 
-    if TBL[x][y - 1] == 0 and GrilleGUM[x][y - 1] == valMinGUM: L.append((0, -1))
-    if TBL[x][y + 1] == 0 and GrilleGUM[x][y + 1] == valMinGUM: L.append((0, 1))
-    if TBL[x + 1][y] == 0 and GrilleGUM[x + 1][y] == valMinGUM: L.append((1, 0))
-    if TBL[x - 1][y] == 0 and GrilleGUM[x - 1][y] == valMinGUM: L.append((-1, 0))
+    valMaxGhost = GetMaxValueAroundACase(GrilleGHOST, x, y)
 
-    """if Mode == "Fuite":
+    if Mode == "Fuite":
         valMaxGhost = GetMaxValueAroundACase(GrilleGHOST, x, y)
         if TBL[x][y - 1] == 0 and GrilleGHOST[x][y - 1] == valMaxGhost: L.append((0, -1))
         if TBL[x][y + 1] == 0 and GrilleGHOST[x][y + 1] == valMaxGhost: L.append((0, 1))
         if TBL[x + 1][y] == 0 and GrilleGHOST[x + 1][y] == valMaxGhost: L.append((1, 0))
         if TBL[x - 1][y] == 0 and GrilleGHOST[x - 1][y] == valMaxGhost: L.append((-1, 0))
-    else:"""
+    else:
+        if TBL[x][y - 1] == 0 and GrilleGUM[x][y - 1] == valMinGUM: L.append((0, -1))
+        if TBL[x][y + 1] == 0 and GrilleGUM[x][y + 1] == valMinGUM: L.append((0, 1))
+        if TBL[x + 1][y] == 0 and GrilleGUM[x + 1][y] == valMinGUM: L.append((1, 0))
+        if TBL[x - 1][y] == 0 and GrilleGUM[x - 1][y] == valMinGUM: L.append((-1, 0))
 
     return L
 
