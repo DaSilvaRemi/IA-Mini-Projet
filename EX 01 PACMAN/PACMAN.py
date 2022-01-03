@@ -40,7 +40,7 @@ screenHeight = (HAUTEUR + 2) * ZOOM
 
 Window = tk.Tk()
 Window.geometry(str(screeenWidth) + "x" + str(screenHeight))  # taille de la fenetre
-Window.title("ESIEE - PACMAN")
+Window.title("ESIEE - PACMAN - DA SILVA && BAILLEUL")
 
 # création de la frame principale stockant plusieurs pages
 
@@ -94,10 +94,18 @@ canvas.configure(background='black')
 
 def PlacementsGUM():  # placements des pacgums
     GUM = np.zeros(TBL.shape)
+    xmin = 1
+    xmax = LARGEUR - 2
+    ymin = 1
+    ymax = HAUTEUR - 2
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if (TBL[x][y] == 0):
+                if (x == xmin and y == ymin) or (x == xmax and y == ymin) or (x == xmin and y == ymax) or (
+                        x == xmax and y == ymax):
+                    GUM[x][y] = 2
+                    continue
                 GUM[x][y] = 1
     return GUM
 
@@ -114,9 +122,24 @@ Ghosts.append([LARGEUR // 2, HAUTEUR // 2, "red", "RIGHT"])
 
 ################################################################################
 #
-# Règle de jeu  et création de la carte des distances
+# Règles de jeu
 Score = 0
 Mode = "Normal"
+ChasseFantomeCompteur = 0
+
+
+def UpdateModePacMan():
+    global Mode, ChasseFantomeCompteur
+    x, y = PacManPos
+
+    valMinGhost = GetMinValueAroundACase(GrilleGHOST, x, y)
+    if valMinGhost < 3 and Mode != "ChasseFantome":
+        Mode = "Fuite"
+    elif ChasseFantomeCompteur > 0:
+        Mode = "ChasseFantome"
+        ChasseFantomeCompteur -= 1
+    else:
+        Mode = "Normal"
 
 
 ################################################################################
@@ -146,11 +169,11 @@ def GetMinValueAroundACase(Grille, x, y) -> int:
 
 def GetMaxValueAroundACase(Grille, x, y) -> int:
     """
-    Retourne les valeurs minimum des cases voisine à partir de la position de la case passée paramètre
+    Retourne les valeurs maximales des cases voisines à partir de la position de la case passée paramètre
     :param Grille:
     :param x: La position en Largeur
     :param y: La position en Hauteur
-    :return: Le minimum des cases voisines, s'il ne trouve pas l'indice il retourne 999 (valeur des murs)
+    :return: Le maximum des cases voisines, s'il ne trouve pas l'indice il retourne 0
     """
     defaultValueNotFound = 0
 
@@ -159,6 +182,7 @@ def GetMaxValueAroundACase(Grille, x, y) -> int:
     valCase3 = Grille[x][y + 1] if IndexInList(Grille[x], y + 1) else defaultValueNotFound
     valCase4 = Grille[x][y - 1] if IndexInList(Grille[x], y - 1) else defaultValueNotFound
 
+    # Contrôle si la case est un mur, si oui on y met -1
     valCase1 = -1 if TBL[x + 1][y] == 1 else valCase1
     valCase2 = -1 if TBL[x - 1][y] == 1 else valCase2
     valCase3 = -1 if TBL[x][y + 1] == 1 else valCase3
@@ -175,9 +199,6 @@ def InitGrilleGUM() -> None:
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             valTBL = TBL[x][y]
-            # 0 vide
-            # 1 mur
-            # 2 maison des fantomes (ils peuvent circuler mais pas pacman)
             if valTBL != 1:
                 if GUM[x][y] == 0:
                     GrilleGUM[x][y] = 100
@@ -222,7 +243,7 @@ InitGrilleGUM()
 
 ################################################################################
 #
-# Création de la carte des distances pour les GUM
+# Création de la carte des distances pour les Ghosts
 
 def InitGrilleGHOST() -> None:
     global GrilleGHOST
@@ -317,29 +338,36 @@ def Affiche():
                 yy = To(y)
                 e = 5
                 canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="orange")
+            elif (GUM[x][y] == 2):
+                xx = To(x)
+                yy = To(y)
+                e = 10
+                canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="yellow")
 
     # extra info
+    # Savoir position case
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             xx = To(x)
             yy = To(y) + 10
             txt = "∞"
             canvas.create_text(xx, yy, text=txt, fill="white", font=("Purisa", 8))
-
+    # Affichage des valeurs de la carte des distances de la GUM
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if GrilleGUM[x][y] <= 100:
                 xx = To(x)
                 yy = To(y) + 10
                 txt = GrilleGUM[x][y]
-                canvas.create_text(xx, yy, text=txt, fill="RED", font=("Purisa", 8))
-
+                canvas.create_text(xx - 8, yy + 8, text=txt, fill="red", font=("Purisa", 8))
+    # Distance aux ennemis
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
-            xx = To(x)
-            yy = To(y) + 10
-            txt = GrilleGHOST[x][y]
-            canvas.create_text(xx, yy, text=txt, fill="PURPLE", font=("Purisa", 8))
+            if GrilleGHOST[x][y] != 999:
+                xx = To(x)
+                yy = To(y) + 10
+                txt = GrilleGHOST[x][y]
+                canvas.create_text(xx + 8, yy + 8, text=txt, fill="green", font=("Purisa", 8))
 
     # dessine pacman
     xx = To(PacManPos[0])
@@ -375,26 +403,17 @@ def Affiche():
 
     # texte blabla
 
-    canvas.create_text(screeenWidth // 2, screenHeight - 50, text="Hello", fill="yellow", font=PoliceTexte)
-    canvas.create_text(screeenWidth // 2, 15, text="Score " + str(Score), fill="yellow", font=PoliceTexte)
+    canvas.create_text(screeenWidth // 2, screenHeight - 50, text=f"Mode : {Mode}, Furie : {ChasseFantomeCompteur}",
+                       fill="yellow", font=PoliceTexte)
+    canvas.create_text(screeenWidth // 2, 15, text=f"Score : {Score}", fill="yellow", font=PoliceTexte)
 
 
 #################################################################
 ##
-##  IA RANDOM
-
-def UpdateModePacMan():
-    global Mode
-    x, y = PacManPos
-
-    valMinGhost = GetMinValueAroundACase(GrilleGHOST, x, y)
-    if valMinGhost < 3:
-        Mode = "Fuite"
-    else:
-        Mode = "Normal"
+##  IA du jeu
 
 
-def PacManPossibleMove():
+def PacManPossibleMove() -> list:
     global Mode
 
     L = []
@@ -406,12 +425,34 @@ def PacManPossibleMove():
     valMaxGhost = GetMaxValueAroundACase(GrilleGHOST, x, y)
 
     if Mode == "Fuite":
+        # PacMan doit aller vers la case dont la valeur d'éloignement aux fantômes est la plus grande
         valMaxGhost = GetMaxValueAroundACase(GrilleGHOST, x, y)
         if TBL[x][y - 1] == 0 and GrilleGHOST[x][y - 1] == valMaxGhost: L.append((0, -1))
         if TBL[x][y + 1] == 0 and GrilleGHOST[x][y + 1] == valMaxGhost: L.append((0, 1))
         if TBL[x + 1][y] == 0 and GrilleGHOST[x + 1][y] == valMaxGhost: L.append((1, 0))
         if TBL[x - 1][y] == 0 and GrilleGHOST[x - 1][y] == valMaxGhost: L.append((-1, 0))
+    elif Mode == "ChasseFantome":
+        # PacMan doit aller vers la case dont la valeur d'éloignement aux fantômes est la plus petite
+        defaultValueNotFound = 999
+
+        valCase1 = GrilleGHOST[x + 1][y] if IndexInList(GrilleGHOST, x + 1) else defaultValueNotFound
+        valCase2 = GrilleGHOST[x - 1][y] if IndexInList(GrilleGHOST, x - 1) else defaultValueNotFound
+        valCase3 = GrilleGHOST[x][y + 1] if IndexInList(GrilleGHOST[x], y + 1) else defaultValueNotFound
+        valCase4 = GrilleGHOST[x][y - 1] if IndexInList(GrilleGHOST[x], y - 1) else defaultValueNotFound
+
+        valCase1 = 999 if TBL[x + 1][y] == 2 else valCase1
+        valCase2 = 999 if TBL[x - 1][y] == 2 else valCase2
+        valCase3 = 999 if TBL[x][y + 1] == 2 else valCase3
+        valCase4 = 999 if TBL[x][y - 1] == 2 else valCase4
+
+        valMinGhost = min(valCase1, valCase2, valCase3, valCase4)
+
+        if TBL[x][y - 1] == 0 and GrilleGHOST[x][y - 1] == valMinGhost: L.append((0, -1))
+        if TBL[x][y + 1] == 0 and GrilleGHOST[x][y + 1] == valMinGhost: L.append((0, 1))
+        if TBL[x + 1][y] == 0 and GrilleGHOST[x + 1][y] == valMinGhost: L.append((1, 0))
+        if TBL[x - 1][y] == 0 and GrilleGHOST[x - 1][y] == valMinGhost: L.append((-1, 0))
     else:
+        # PacMan doit aller vers la case dont la valeur d'éloignement aux GUM est la plus petite
         if TBL[x][y - 1] == 0 and GrilleGUM[x][y - 1] == valMinGUM: L.append((0, -1))
         if TBL[x][y + 1] == 0 and GrilleGUM[x][y + 1] == valMinGUM: L.append((0, 1))
         if TBL[x + 1][y] == 0 and GrilleGUM[x + 1][y] == valMinGUM: L.append((1, 0))
@@ -421,9 +462,9 @@ def PacManPossibleMove():
 
 
 def NbCheminVide(x, y) -> int:
-    # 0 vide
-    # 1 mur
-    # 2 maison des fantomes (ils peuvent circuler mais pas pacman)
+    """
+    Compte le nombre de chemins vides pour une case donnée
+    """
     nbCheminVide = 0
     if TBL[x][y - 1] != 1: nbCheminVide += 1
     if TBL[x][y + 1] != 1: nbCheminVide += 1
@@ -476,44 +517,62 @@ def GhostMove(x, y, direction) -> tuple:
     return L[choix]
 
 
-def HasCollidedWithGhost() -> bool:
+def GetCollidedGhost() -> list:
     global PacManPos
-
+    L = []
     xpac, ypac = PacManPos
+
     for G in Ghosts:
         xghost = G[0]
         yghost = G[1]
         if xghost == xpac and yghost == ypac:
-            return True
+            L.append(G)
+    return L
 
-    return False
 
+def IA() -> None:
+    global PacManPos, Ghosts, Score, ChasseFantomeCompteur, Mode
 
-def IA():
-    global PacManPos, Ghosts, Score
-
-    # deplacement Pacman
+    # déplacement Pacman
     L = PacManPossibleMove()
-    choix = random.randrange(len(L))
-    PacManPos[0] += L[choix][0]
-    PacManPos[1] += L[choix][1]
+    try:
+        choix = random.randrange(len(L))
+        PacManPos[0] += L[choix][0]
+        PacManPos[1] += L[choix][1]
+    except:
+        print(f"Liste = {L}")
 
     # PACMAN EAT GUM
     if GUM[PacManPos[0]][PacManPos[1]] == 1:
         Score += 1
         GUM[PacManPos[0]][PacManPos[1]] = 0
+    elif GUM[PacManPos[0]][PacManPos[1]] == 2:
+        Score += 10
+        GUM[PacManPos[0]][PacManPos[1]] = 0
+        Mode = "ChasseFantome"
+        ChasseFantomeCompteur = 16
 
-    # deplacement Fantome
+    # déplacement Fantome
     for F in Ghosts:
         L = GhostMove(F[0], F[1], F[3])
         F[3] = GetDirection(L)
         F[0] += L[0]
         F[1] += L[1]
 
+    # Met à jour les cartes de distance aux GUM et aux fantômes
     UpdateGrilleGUM()
     UpdateGrilleGHOST()
-    if (HasCollidedWithGhost()):
-        print("COLLISIOOOONN")
+
+    ListCollidedGhost = GetCollidedGhost()
+    if len(ListCollidedGhost) > 0:
+        if Mode == "ChasseFantome":
+            # PacMan mange un ou des fantômes
+            Score += 15
+            for G in ListCollidedGhost:
+                G[0] = LARGEUR // 2
+                G[1] = HAUTEUR // 2
+        else:
+            Score -= 25
 
 
 #################################################################
