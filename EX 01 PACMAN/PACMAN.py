@@ -309,18 +309,48 @@ def PacManPossibleMove():
     return L
 
 
-def GhostsPossibleMove(x, y, direction):
+def NbCheminVide(x, y) -> int:
+    nbCheminVide = 0
+    if TBL[x][y - 1] == 1: nbCheminVide += 1
+    if TBL[x][y + 1] == 1: nbCheminVide += 1
+    if TBL[x + 1][y] == 1: nbCheminVide += 1
+    if TBL[x - 1][y] == 1: nbCheminVide += 1
+    return nbCheminVide
+
+
+def IsCroisement(x, y) -> bool:
+    return NbCheminVide(x, y) >= 3
+
+
+def IsTournant(x, y) -> bool:
+    return NbCheminVide(x, y) == 2
+
+
+def GhostsPossibleMove(x, y):
     L = []
-    """"
     if (TBL[x][y - 1] == 2): L.append((0, -1))
     if (TBL[x][y + 1] == 2): L.append((0, 1))
     if (TBL[x + 1][y] == 2): L.append((1, 0))
     if (TBL[x - 1][y] == 2): L.append((-1, 0))
-    """
-    if direction == "UP": L.append((0, -1))
-    if direction == "DOWN": L.append((0, 1))
-    if direction == "RIGHT": L.append((1, 0))
-    if direction == "LEFT": L.append((-1, 0))
+    return L
+
+
+def GhostMove(x, y, direction):
+    L = []
+    if IsCroisement(x, y) or IsTournant(x, y):
+        LGhostPossibleMove = GhostsPossibleMove(x, y)
+        choix = random.randrange(len(LGhostPossibleMove))
+
+        return LGhostPossibleMove[choix]
+
+    if direction == "UP":
+        L.append((0, -1))
+    elif direction == "DOWN":
+        L.append((0, 1))
+    elif direction == "RIGHT":
+        L.append((1, 0))
+    elif direction == "LEFT":
+        L.append((-1, 0))
     return L
 
 
@@ -340,10 +370,11 @@ def IA():
 
     # deplacement Fantome
     for F in Ghosts:
-        L = GhostsPossibleMove(F[0], F[1], F[3])
+        L = GhostMove(F[0], F[1], F[3])
         choix = random.randrange(len(L))
-        F[0] += L[choix][0]
-        F[1] += L[choix][1]
+        val = L[0][0]
+        F[0] += val
+        #F[1] += L[0][1]
 
     UpdateGrille()
 
