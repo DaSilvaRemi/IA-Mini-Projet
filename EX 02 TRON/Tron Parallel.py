@@ -94,12 +94,32 @@ def Simulate(Game):
         if Debug :print("Y : ",Y)
         if Debug :print("S : ",S)
 
+        LPossibles = np.zeros((nb, 4), dtype=np.int32)
+        Indices = np.zeros(nb, dtype=np.int32)
+
+        VGauche = (G[I, X - 1, Y] == 0) * 1
+        VDroite = (G[I, X + 1, Y] == 0) * 1
+        VHaut = (G[I, X, Y + 1] == 0) * 1
+        VBas = (G[I, X, Y - 1] == 0) * 1
+
+        LPossibles[I, Indices] = VGauche * 1
+        Indices += VGauche
+        LPossibles[I, Indices] = VHaut * 2
+        Indices += VHaut
+        LPossibles[I, Indices] = VDroite * 3
+        Indices += VDroite
+        LPossibles[I, Indices] = VBas * 4
+        Indices += VBas
+
+        Indices[Indices == 0] = 1
+        R = np.random.randint(Indices)
+
         # marque le passage de la moto
         G[I, X, Y] = 2
 
 
         # Direction : 2 = vers le haut
-        Choix = np.ones(nb,dtype=np.uint32) * 2
+        Choix = LPossibles[I, R]
 
 
         #DEPLACEMENT
@@ -110,13 +130,17 @@ def Simulate(Game):
         X += DX
         Y += DY
 
+        if np.mean(ds[Choix]) == 0:
+            break
+
+        S += ds[Choix]
 
         #debug
         if Debug : AffGrilles(G,X,Y)
         if Debug : time.sleep(2)
 
-    print("Scores : ",np.mean(S))
-
+        print("Scores : ",np.mean(S))
+    return S.sum()
 
 
 Simulate(GameInit)

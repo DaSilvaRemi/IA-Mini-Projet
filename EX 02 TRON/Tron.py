@@ -3,6 +3,7 @@ import random
 import numpy as np
 import copy
 import random
+import time
 
 #################################################################################
 #
@@ -168,6 +169,73 @@ def SimulationPartie(Game: Game) -> int:
         Game.Score += 1
 
 
+###########################################################
+#
+# simulation en parallèle des parties
+
+
+# Liste des directions :
+# 0 : sur place   1: à gauche  2 : en haut   3: à droite    4: en bas
+
+dx = np.array([0, -1, 0,  1,  0],dtype=np.int32)
+dy = np.array([0,  0, 1,  0, -1],dtype=np.int32)
+
+# scores associés à chaque déplacement
+ds = np.array([0,  1,  1,  1,  1],dtype=np.int32)
+
+def Simulate(Game, nb):
+
+    # on copie les datas de départ pour créer plusieurs parties en //
+    G      = np.tile(Game.Grille,(nb,1,1))
+    X      = np.tile(Game.PlayerX,nb)
+    Y      = np.tile(Game.PlayerY,nb)
+    S      = np.tile(Game.Score,nb)
+    I      = np.arange(nb)  # 0,1,2,3,4,5...
+    boucle = True
+
+    # VOTRE CODE ICI
+
+    while(boucle) :
+        LPossibles = np.zeros((nb, 4), dtype=np.int32)
+        Indices = np.zeros(nb, dtype=np.int32)
+
+        VGauche = (G[I, X - 1, Y] == 0) * 1
+        VDroite = (G[I, X + 1, Y] == 0) * 1
+        VHaut = (G[I, X, Y + 1] == 0) * 1
+        VBas = (G[I, X, Y - 1] == 0) * 1
+
+        LPossibles[I, Indices] = VGauche * 1
+        Indices += VGauche
+        LPossibles[I, Indices] = VHaut * 2
+        Indices += VHaut
+        LPossibles[I, Indices] = VDroite * 3
+        Indices += VDroite
+        LPossibles[I, Indices] = VBas * 4
+        Indices += VBas
+
+        Indices[Indices == 0] = 1
+        R = np.random.randint(Indices)
+
+        # marque le passage de la moto
+        G[I, X, Y] = 2
+
+        # Direction : 2 = vers le haut
+        Choix = LPossibles[I, R]
+
+        # DEPLACEMENT
+        DX = dx[Choix]
+        DY = dy[Choix]
+        X += DX
+        Y += DY
+
+        if np.mean(ds[Choix]) == 0:
+            break
+
+        S += ds[Choix]
+
+    return S.sum()
+
+
 def MonteCarlo(Game: Game, nombreParties) -> int:
     Total = 0
     for i in range(0, nombreParties):
@@ -177,6 +245,7 @@ def MonteCarlo(Game: Game, nombreParties) -> int:
 
 
 def DeterminerCoupPlusPrometteur(Game, L) -> tuple:
+    Tstart = time.time()
     ScorePlusPrometteur = 0
     CoupPlusPrometteur = ()
 
@@ -184,11 +253,12 @@ def DeterminerCoupPlusPrometteur(Game, L) -> tuple:
         Game2 = Game.copy()
         Game2.PlayerX += offset[0]
         Game2.PlayerY += offset[1]
-        tmpScorePlusPrometteur = MonteCarlo(Game2, 100)
+        tmpScorePlusPrometteur = Simulate(Game2, 30000)
 
         if (tmpScorePlusPrometteur > ScorePlusPrometteur):
             CoupPlusPrometteur = offset
             ScorePlusPrometteur = tmpScorePlusPrometteur
+    print(time.time() - Tstart)
     return CoupPlusPrometteur
 
 
