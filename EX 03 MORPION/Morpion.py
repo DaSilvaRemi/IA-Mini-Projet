@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import random
 import numpy as np
+from pynput.mouse import Button, Controller
 
 ###############################################################################
 # création de la fenetre principale  - ne pas toucher
@@ -48,30 +49,183 @@ canvas.place(x=0, y=0)
 #
 #  Parametres du jeu
 
-Grille = [[0, 0, 1],
-          [2, 0, 0],
+Grille = [[0, 0, 0],
+          [0, 0, 0],
           [0, 0, 0]]  # attention les lignes représentent les colonnes de la grille
 
 Grille = np.array(Grille)
 Grille = Grille.transpose()  # pour avoir x,y
+
+Score = 0
+DebutPartie = True
+turn = "IA"
 
 
 ###############################################################################
 #
 # gestion du joueur humain et de l'IA
 # VOTRE CODE ICI
+def EndGame(gagnant: int) -> None:
+    global Score
 
-def Play(x, y):
-    Grille[x][y] = 1
+    if gagnant == 1:
+        Score += 1
+
+    Dessine(True, gagnant)
+
+
+def CaseIsEmpty(x: int, y: int) -> bool:
+    return Grille[x, y] == 0
+
+
+def GetCaseDisponible() -> list:
+    CaseDisponible = []
+
+    for x in range(0, len(Grille)):
+        for y in range(0, len(Grille)):
+            if CaseIsEmpty(x, y):
+                CaseDisponible.append((x, y))
+    return CaseDisponible
+
+
+def ConfigIsGagnante(L: list, v: int) -> int:
+    return L.count(v) == 3
+
+
+def HaveWin(valCasePlayer: int = 1) -> bool:
+    """
+    :param valCasePlayer:
+    :return:
+    """
+    col = []
+    diagonaleLeft = []
+    diagonaleRight = []
+
+    haveWin = False
+
+    for y in range(0, len(Grille)):
+        for x in range(0, len(Grille)):
+            ligne = Grille[x].tolist()
+            diagonaleLeft.append(Grille[x][x])
+            xEnd = len(Grille) - 1 - x
+            diagonaleRight.append(Grille[x][xEnd])
+            col.append(Grille[x][y])
+
+            if ConfigIsGagnante(ligne, valCasePlayer):
+                haveWin = True
+                break
+
+        if ConfigIsGagnante(diagonaleLeft, valCasePlayer) or ConfigIsGagnante(col, valCasePlayer) or ConfigIsGagnante(
+                diagonaleRight, valCasePlayer):
+            haveWin = True
+            break
+
+        diagonaleLeft.clear()
+        diagonaleRight.clear()
+        col.clear()
+
+    if not haveWin and len(GetCaseDisponible()) == 0:
+        haveWin = valCasePlayer == 3
+
+    return haveWin
+
+
+def GetGagnant() -> str:
+    gagnant = "N"
+    if HaveWin(1):
+        gagnant = "H"
+    elif HaveWin(2):
+        gagnant = "IA"
+
+    return gagnant
+
+
+def PartieIsEnd() -> bool:
+    return HaveWin() or HaveWin(2) or HaveWin(3)
+
+
+def GetBestCoups(Resultats: list, R: str) -> tuple:
+    for i in range(len(Resultats) - 1, -1, -1):
+        result = Resultats[i][0]
+        if result == R:
+            return Resultats[i]
+
+    if R == "N":
+        return Resultats[0][0]
+
+    return GetBestCoups(Resultats, "N")
+
+
+def PlayerSimIA() -> tuple[str, tuple[int, int]] or str:
+    if PartieIsEnd():
+        return GetGagnant()
+    L = GetCaseDisponible()
+    Resultats = []
+
+    for K in L:
+        x, y = K
+        Grille[x][y] = 2
+        R = PlayerSimHuman()
+        Resultats.append((R, K))
+        Grille[x][y] = 0
+
+    return GetBestCoups(Resultats, "IA")
+
+
+def PlayerSimHuman() -> tuple[str, tuple[int, int]] or str:
+    if PartieIsEnd():
+        return GetGagnant()
+    L = GetCaseDisponible()
+    Resultats = []
+
+    for K in L:
+        x, y = K
+        Grille[x][y] = 1
+        R = PlayerSimIA()
+        Resultats.append((R, K))
+        Grille[x][y] = 0
+
+    return GetBestCoups(Resultats, "H")
+
+
+def Play(x: int, y: int) -> None:
+    valCasePlayer = 1
+
+    if turn == "IA":
+        valCasePlayer = 2
+
+    Grille[x][y] = valCasePlayer
+    HaveWin(valCasePlayer)
+
+
+def PlayerPlay(x: int, y: int) -> None:
+    global turn
+    turn = "PLAYER"
+    Play(x, y)
+
+
+def IAPlay() -> None:
+    global turn
+
+    turn = "IA"
+    bestCoupIA = PlayerSimIA()
+    posX = bestCoupIA[1][0]
+    posY = bestCoupIA[1][1]
+    Play(posX, posY)
 
 
 ################################################################################
 #
 # Dessine la grille de jeu
 
-def Dessine(PartieGagnee=False):
+def Dessine(PartieGagnee=False, gagnant=-1):
+    global canvas
     ## DOC canvas : http://tkinter.fdex.eu/doc/caw.html
     canvas.delete("all")
+
+    if PartieGagnee:
+        color = "red" if gagnant == 1 else "yellow" if gagnant == 2 else "white" if gagnant == 3 else "dark"
+        canvas.configure(bg=color)
 
     for i in range(4):
         canvas.create_line(i * 100, 0, i * 100, 300, fill="blue", width="4")
@@ -93,20 +247,41 @@ def Dessine(PartieGagnee=False):
 #  fnt appelée par un clic souris sur la zone de dessin
 
 def MouseClick(event):
+    global canvas, Grille, DebutPartie
+
+    if DebutPartie:
+        Grille.fill(0)
+        canvas.configure(bg="black")
+
     Window.focus_set()
     x = event.x // 100  # convertit une coordonée pixel écran en coord grille de jeu
     y = event.y // 100
     if ((x < 0) or (x > 2) or (y < 0) or (y > 2)): return
-
     print("clicked at", x, y)
 
-    Play(x, y)  # gestion du joueur humain et de l'IA
+    if not CaseIsEmpty(x, y):
+        return
+
+    PlayerPlay(x, y)  # gestion du joueur humain et de l'IA
+
+    if HaveWin():
+        DebutPartie = True
+        EndGame(1)
+    else:
+        IAPlay()
+        if HaveWin(2):
+            DebutPartie = True
+            EndGame(2)
+        elif HaveWin(3):
+            DebutPartie = True
+            EndGame(3)
+        else:
+            DebutPartie = False
 
     Dessine()
 
 
 canvas.bind('<ButtonPress-1>', MouseClick)
-
 #####################################################################################
 #
 #  Mise en place de l'interface - ne pas toucher
