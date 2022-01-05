@@ -55,7 +55,8 @@ Grille = [[0, 0, 0],
 Grille = np.array(Grille)
 Grille = Grille.transpose()  # pour avoir x,y
 
-Score = 0
+ScoreIA = 0
+ScorePlayer = 0
 DebutPartie = True
 turn = "IA"
 
@@ -65,10 +66,12 @@ turn = "IA"
 # gestion du joueur humain et de l'IA
 # VOTRE CODE ICI
 def EndGame(gagnant: int) -> None:
-    global Score
+    global ScorePlayer, ScoreIA
 
     if gagnant == 1:
-        Score += 1
+        ScorePlayer += 1
+    elif gagnant == 2:
+        ScoreIA += 1
 
     Dessine(True, gagnant)
 
@@ -139,18 +142,46 @@ def GetGagnant() -> str:
     return gagnant
 
 
+def ConvertTypePlayerToValuePlayer(typePlayer):
+    value = 1
+
+    if typePlayer == "IA":
+        value = 2
+    elif typePlayer == "N":
+        value = 3
+
+    return value
+
+
 def PartieIsEnd() -> bool:
     return HaveWin() or HaveWin(2) or HaveWin(3)
 
 
 def GetBestCoups(Resultats: list, R: str) -> tuple:
-    for i in range(len(Resultats) - 1, -1, -1):
-        result = Resultats[i][0]
-        if result == R:
-            return Resultats[i]
+    coupsPlayer = []
+
+    for i in range(0, len(Resultats)):
+        typePlayer = Resultats[i][0]
+        if typePlayer == R:
+            coupsPlayer.append(Resultats[i])
+
+    if len(coupsPlayer) > 0:
+        choix = random.randrange(len(coupsPlayer))
+        return coupsPlayer[choix]
 
     if R == "N":
-        return Resultats[0][0]
+        for i in range(0, len(Resultats)):
+            typePlayer = Resultats[i][0]
+            posX, posY = Resultats[i][1]
+            valuePlayer = ConvertTypePlayerToValuePlayer(typePlayer)
+            Grille[posX][posY] = valuePlayer
+
+            if HaveWin(valuePlayer):
+                Grille[posX][posY] = 0
+                return Resultats[i]
+            Grille[posX, posY] = 0
+        choix = random.randrange(len(Resultats))
+        return Resultats[choix]
 
     return GetBestCoups(Resultats, "N")
 
@@ -207,9 +238,18 @@ def IAPlay() -> None:
     global turn
 
     turn = "IA"
-    bestCoupIA = PlayerSimIA()
-    posX = bestCoupIA[1][0]
-    posY = bestCoupIA[1][1]
+    try:
+        caseDisponibles = GetCaseDisponible()
+        if 8 > len(caseDisponibles) > 1:
+            bestCoupIA = PlayerSimIA()
+            posX = bestCoupIA[1][0]
+            posY = bestCoupIA[1][1]
+        else:
+            choix = random.randrange(len(caseDisponibles))
+            bestCoupIA = caseDisponibles[choix]
+            posX, posY = bestCoupIA
+    except IndexError:
+        breakpoint()
     Play(posX, posY)
 
 
@@ -240,6 +280,9 @@ def Dessine(PartieGagnee=False, gagnant=-1):
             if (Grille[x][y] == 2):
                 canvas.create_oval(xc + 10, yc + 10, xc + 90, yc + 90, outline="yellow", width="4")
 
+    canvas.create_text(30, 15, text=f"J1: {ScorePlayer}", fill="yellow", font="Helvetica 12 bold")
+    canvas.create_text(LARG - 30, 15, text=f"IA: {ScoreIA}", fill="yellow", font="Helvetica 12 bold")
+
 
 ####################################################################################
 #
@@ -263,17 +306,14 @@ def MouseClick(event):
 
     PlayerPlay(x, y)  # gestion du joueur humain et de l'IA
 
-    if HaveWin():
+    if PartieIsEnd():
         DebutPartie = True
-        EndGame(1)
+        EndGame(ConvertTypePlayerToValuePlayer(GetGagnant()))
     else:
         IAPlay()
-        if HaveWin(2):
+        if PartieIsEnd():
             DebutPartie = True
-            EndGame(2)
-        elif HaveWin(3):
-            DebutPartie = True
-            EndGame(3)
+            EndGame(ConvertTypePlayerToValuePlayer(GetGagnant()))
         else:
             DebutPartie = False
 
