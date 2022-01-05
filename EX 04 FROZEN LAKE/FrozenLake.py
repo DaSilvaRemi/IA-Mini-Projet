@@ -1,5 +1,7 @@
 import tkinter as tk
 import random
+
+import numpy
 import numpy as np
 import copy
 
@@ -34,6 +36,12 @@ Data = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 
 GInit = np.array(Data, dtype=np.int8)
 GInit = np.flip(GInit, 0).transpose()
+
+defaultNbActionDuringEtat = ([0, 0], [2, 0], [4, 0], [6, 0])
+defaultNbTransitionEtat = (GInit, defaultNbActionDuringEtat)
+
+NbChoixActionDuringEtat = [[GInit, defaultNbActionDuringEtat]]
+NbTransitionsBetweenEtat = [[GInit, defaultNbTransitionEtat, 0]]
 
 LARGEUR = 13
 HAUTEUR = 17
@@ -235,12 +243,52 @@ def JeuClavier():
 #
 ###########################################################
 
+def UpdateNbChoiceActionTab(G: Game, action: int) -> list:
+    for choixActionsDuringEtat in NbChoixActionDuringEtat:
+        etatActionGrille, nActionsEtat = choixActionsDuringEtat
+        if G.Grille == etatActionGrille:
+            nActionsEtat[action][1] += 1
+            return nActionsEtat
+
+    nActionsEtats = defaultNbActionDuringEtat
+    nActionsEtats[action][1] += 1
+
+    state = [G.Grille, nActionsEtats]
+    NbChoixActionDuringEtat.append(state)
+    return state
+
+
+def UpdateNbTransitionsEtat(nbActionEtatInitial, etatTransitoire):
+    haveEtatTransitoireInNbTransBetweenEtat = False
+    haveEtatInitialInNbTransBetweenEtat = False
+
+    for nbTransitionBetweenEtat in NbTransitionsBetweenEtat:
+        etatPrime, choixActionsDuringEtat, nbTransitions = nbTransitionBetweenEtat
+
+        if etatPrime == etatTransitoire:
+            haveEtatTransitoireInNbTransBetweenEtat = True
+            etatActionGrille = choixActionsDuringEtat[0]
+            etatInitial = nbActionEtatInitial[0]
+
+            if etatActionGrille == etatInitial:
+                haveEtatInitialInNbTransBetweenEtat = True
+                nbTransitionBetweenEtat[2] = nbTransitions + 1
+
+    if not haveEtatTransitoireInNbTransBetweenEtat or not haveEtatInitialInNbTransBetweenEtat:
+        NbTransitionsBetweenEtat.append([etatTransitoire, nbActionEtatInitial, 0])
+
+
 def SimulGame():  # il n y a pas de notion de "fin de partie"
+    Q = numpy.array(dtype=object)
+
     G = Game()
     reward = 0
     for i in range(100):
         action = random.randrange(0, 4)
+        nbEtatInitial = UpdateNbChoiceActionTab(G, action)
         reward += G.Do(action)
+        UpdateNbTransitionsEtat(nbEtatInitial, G.Grille)
+
     return reward
 
 
