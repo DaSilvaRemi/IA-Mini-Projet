@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import messagebox
 import random
 import numpy as np
-from pynput.mouse import Button, Controller
 
 ###############################################################################
 # création de la fenetre principale  - ne pas toucher
