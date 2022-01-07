@@ -39,9 +39,11 @@ GInit = np.flip(GInit, 0).transpose()
 
 defaultNbActionDuringEtat = ([0, 0], [2, 0], [4, 0], [6, 0])
 defaultNbTransitionEtat = (GInit, defaultNbActionDuringEtat)
+defaultSommeRewardsTransitionsBetweenEtat = [GInit, defaultNbTransitionEtat, 0]
 
 NbChoixActionDuringEtat = [[GInit, defaultNbActionDuringEtat]]
 NbTransitionsBetweenEtat = [[GInit, defaultNbTransitionEtat, 0]]
+SommeRewardsTransitionsBetweenEtat = [defaultSommeRewardsTransitionsBetweenEtat]
 
 LARGEUR = 13
 HAUTEUR = 17
@@ -278,6 +280,26 @@ def UpdateNbTransitionsEtat(nbActionEtatInitial, etatTransitoire):
         NbTransitionsBetweenEtat.append([etatTransitoire, nbActionEtatInitial, 0])
 
 
+def UpdateSommeRewardsTransitionBetweenEtat(nbActionEtatInitial, etatTransitoire, reward):
+    haveEtatTransitoireInSommeRTransBetweenEtat = False
+    haveEtatInitialInInSommeRTransBetweenEtat = False
+
+    for sommeRewardsTransitionBetweenEtat in SommeRewardsTransitionsBetweenEtat:
+        etatPrime, choixActionsDuringEtat, sommeRewards = sommeRewardsTransitionBetweenEtat
+
+        if etatPrime == etatTransitoire:
+            haveEtatTransitoireInSommeRTransBetweenEtat = True
+            etatActionGrille = choixActionsDuringEtat[0]
+            etatInitial = nbActionEtatInitial[0]
+
+            if etatActionGrille == etatInitial:
+                haveEtatInitialInInSommeRTransBetweenEtat = True
+                sommeRewardsTransitionBetweenEtat[2] = sommeRewards + reward
+
+    if not haveEtatTransitoireInSommeRTransBetweenEtat or not haveEtatInitialInInSommeRTransBetweenEtat:
+        NbTransitionsBetweenEtat.append([etatTransitoire, nbActionEtatInitial, 0])
+
+
 def SimulGame():  # il n y a pas de notion de "fin de partie"
     Q = numpy.array(dtype=object)
 
@@ -286,8 +308,10 @@ def SimulGame():  # il n y a pas de notion de "fin de partie"
     for i in range(100):
         action = random.randrange(0, 4)
         nbEtatInitial = UpdateNbChoiceActionTab(G, action)
-        reward += G.Do(action)
+        r = G.Do(action)
+        reward += r
         UpdateNbTransitionsEtat(nbEtatInitial, G.Grille)
+        UpdateSommeRewardsTransitionBetweenEtat(nbEtatInitial, G.Grille, reward)
 
     return reward
 

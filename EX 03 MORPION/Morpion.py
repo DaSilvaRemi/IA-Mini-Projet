@@ -238,6 +238,7 @@ def IAPlay() -> None:
     global turn
 
     turn = "IA"
+    posX, posY = [0, 0]
     try:
         caseDisponibles = GetCaseDisponible()
         if 8 > len(caseDisponibles) > 1:
