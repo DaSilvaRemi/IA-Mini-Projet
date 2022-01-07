@@ -164,35 +164,6 @@ def PartieIsEnd() -> bool:
     return HaveWin() or HaveWin(2) or HaveWin(3)
 
 
-"""def GetBestCoups(Resultats: list, R: str) -> tuple:
-    coupsPlayer = []
-
-    for i in range(0, len(Resultats)):
-        typePlayer = Resultats[i][0]
-        if typePlayer == R:
-            coupsPlayer.append(Resultats[i])
-
-    if len(coupsPlayer) > 0:
-        choix = random.randrange(len(coupsPlayer))
-        return coupsPlayer[choix]
-
-    if R == "N":
-        for i in range(0, len(Resultats)):
-            typePlayer = Resultats[i][0]
-            posX, posY = Resultats[i][1]
-            valuePlayer = ConvertTypePlayerToValuePlayer(typePlayer)
-            Grille[posX][posY] = valuePlayer
-
-            if HaveWin(valuePlayer):
-                Grille[posX][posY] = 0
-                return Resultats[i]
-            Grille[posX, posY] = 0
-        choix = random.randrange(len(Resultats))
-        return Resultats[choix]
-
-    return GetBestCoups(Resultats, "N")"""
-
-
 def GetBestCoups(Resultats: list, R) -> tuple:
     if R == "IA":
         return GetBestCoupsIA(Resultats)
