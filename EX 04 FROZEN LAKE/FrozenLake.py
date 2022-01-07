@@ -39,9 +39,11 @@ GInit = np.flip(GInit, 0).transpose()
 
 defaultNbActionDuringEtat = ([0, 0], [2, 0], [4, 0], [6, 0])
 defaultNbTransitionEtat = (GInit, defaultNbActionDuringEtat)
+# [Etat transitoire, [EtatInit, actions], rewards]
 defaultSommeRewardsTransitionsBetweenEtat = [GInit, defaultNbTransitionEtat, 0]
 
 NbChoixActionDuringEtat = [[GInit, defaultNbActionDuringEtat]]
+# [Etat transitoire, [EtatInit, actions], nbTransitions]
 NbTransitionsBetweenEtat = [[GInit, defaultNbTransitionEtat, 0]]
 SommeRewardsTransitionsBetweenEtat = [defaultSommeRewardsTransitionsBetweenEtat]
 
@@ -269,7 +271,9 @@ def UpdateNbTransitionsEtat(nbActionEtatInitial, etatTransitoire):
 
         if etatPrime == etatTransitoire:
             haveEtatTransitoireInNbTransBetweenEtat = True
+            # [EtatPrime, [EtatInitial, [Actions]], nbTransitions]
             etatActionGrille = choixActionsDuringEtat[0]
+            # [EtatInitial, [Actions]]  -> EtatInitial
             etatInitial = nbActionEtatInitial[0]
 
             if etatActionGrille == etatInitial:
@@ -289,7 +293,9 @@ def UpdateSommeRewardsTransitionBetweenEtat(nbActionEtatInitial, etatTransitoire
 
         if etatPrime == etatTransitoire:
             haveEtatTransitoireInSommeRTransBetweenEtat = True
+            # [EtatPrime, [EtatInitial, [Actions]], nbTransitions]
             etatActionGrille = choixActionsDuringEtat[0]
+            # [EtatInitial, [Actions]]  -> EtatInitial
             etatInitial = nbActionEtatInitial[0]
 
             if etatActionGrille == etatInitial:

@@ -59,6 +59,7 @@ ScoreIA = 0
 ScorePlayer = 0
 DebutPartie = True
 turn = "IA"
+lastCoup = (0, 0)
 
 
 ###############################################################################
@@ -77,7 +78,7 @@ def EndGame(gagnant: int) -> None:
 
 
 def CaseIsEmpty(x: int, y: int) -> bool:
-    return Grille[x, y] == 0
+    return Grille[x][y] == 0
 
 
 def GetCaseDisponible() -> list:
@@ -142,6 +143,12 @@ def GetGagnant() -> str:
     return gagnant
 
 
+def GetGagnantInt() -> int:
+    gagnant = GetGagnant()
+
+    return 0 if gagnant == "N" else 1 if gagnant == "IA" else -1
+
+
 def ConvertTypePlayerToValuePlayer(typePlayer):
     value = 1
 
@@ -157,7 +164,7 @@ def PartieIsEnd() -> bool:
     return HaveWin() or HaveWin(2) or HaveWin(3)
 
 
-def GetBestCoups(Resultats: list, R: str) -> tuple:
+"""def GetBestCoups(Resultats: list, R: str) -> tuple:
     coupsPlayer = []
 
     for i in range(0, len(Resultats)):
@@ -183,48 +190,81 @@ def GetBestCoups(Resultats: list, R: str) -> tuple:
         choix = random.randrange(len(Resultats))
         return Resultats[choix]
 
-    return GetBestCoups(Resultats, "N")
+    return GetBestCoups(Resultats, "N")"""
 
 
-def PlayerSimIA() -> tuple[str, tuple[int, int]] or str:
+def GetBestCoups(Resultats: list, R) -> tuple:
+    if R == "IA":
+        return GetBestCoupsIA(Resultats)
+    else:
+        return GetBestCoupsH(Resultats)
+
+
+def GetBestCoupsIA(Resultats: list) -> tuple:
+    max = -2
+    maxResult = ()
+    for i in range(0, len(Resultats)):
+        score = Resultats[i][0]
+        if score > max:
+            max = score
+            maxResult = Resultats[i]
+    return maxResult
+
+
+def GetBestCoupsH(Resultats: list) -> tuple:
+    min = 2
+    minResult = ()
+    for i in range(0, len(Resultats)):
+        score = Resultats[i][0]
+        if score < min:
+            min = score
+            minResult = Resultats[i]
+    return minResult
+
+
+def PlayerSimIA(n) -> tuple[str, tuple[int, int]] or str:
+    global lastCoup
     if PartieIsEnd():
-        return GetGagnant()
-    L = GetCaseDisponible()
+        return (GetGagnantInt(), (-10,-10))
+    casesDisponible = GetCaseDisponible()
     Resultats = []
 
-    for K in L:
-        x, y = K
+    for coup in casesDisponible:
+        x, y = coup
         Grille[x][y] = 2
-        R = PlayerSimHuman()
-        Resultats.append((R, K))
+        score, coupJoue = PlayerSimHuman(n + 1)
+        Resultats.append((score, coup))
         Grille[x][y] = 0
 
     return GetBestCoups(Resultats, "IA")
 
 
-def PlayerSimHuman() -> tuple[str, tuple[int, int]] or str:
+def PlayerSimHuman(n) -> tuple[str, tuple[int, int]] or str:
+    global lastCoup
     if PartieIsEnd():
-        return GetGagnant()
-    L = GetCaseDisponible()
+        return (GetGagnantInt(), (-10,-10))
+    casesDisponible = GetCaseDisponible()
     Resultats = []
 
-    for K in L:
-        x, y = K
+    for coup in casesDisponible:
+        x, y = coup
         Grille[x][y] = 1
-        R = PlayerSimIA()
-        Resultats.append((R, K))
+        score, coupJoue = PlayerSimIA(n + 1)
+        Resultats.append((score, coup))
         Grille[x][y] = 0
 
     return GetBestCoups(Resultats, "H")
 
 
 def Play(x: int, y: int) -> None:
+    global lastCoup
     valCasePlayer = 1
 
     if turn == "IA":
         valCasePlayer = 2
 
     Grille[x][y] = valCasePlayer
+    lastCoup = (x, y)
     HaveWin(valCasePlayer)
 
 
@@ -239,18 +279,15 @@ def IAPlay() -> None:
 
     turn = "IA"
     posX, posY = [0, 0]
-    try:
-        caseDisponibles = GetCaseDisponible()
-        if 8 > len(caseDisponibles) > 1:
-            bestCoupIA = PlayerSimIA()
-            posX = bestCoupIA[1][0]
-            posY = bestCoupIA[1][1]
-        else:
-            choix = random.randrange(len(caseDisponibles))
-            bestCoupIA = caseDisponibles[choix]
-            posX, posY = bestCoupIA
-    except IndexError:
-        breakpoint()
+    caseDisponibles = GetCaseDisponible()
+    if len(caseDisponibles) > 1:
+        bestCoupIA = PlayerSimIA(0)
+        posX = bestCoupIA[1][0]
+        posY = bestCoupIA[1][1]
+    else:
+        choix = random.randrange(len(caseDisponibles))
+        bestCoupIA = caseDisponibles[choix]
+        posX, posY = bestCoupIA
     Play(posX, posY)
 
 
