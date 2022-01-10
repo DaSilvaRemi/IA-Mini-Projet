@@ -4,13 +4,13 @@ import random
 import numpy as np
 import copy
 
-# voici les 4 touches utilisées pour les déplacements  gauche/haut/droite/bas
+# voici les 4 touches utilisees pour les deplacements  gauche/haut/droite/bas
 
 Keys = ['q', 'z', 'd', 's']
 
 #################################################################################
 #
-#   Données de partie
+#   Donnees de partie
 #
 #################################################################################
 
@@ -53,7 +53,7 @@ HAUTEUR = 17
 
 #################################################################################
 #
-#   création de la fenetre principale  - NE PAS TOUCHER
+#   creation de la fenetre principale  - NE PAS TOUCHER
 #
 #################################################################################
 
@@ -77,7 +77,7 @@ def keydown(e):
         LastKey = e.char
 
 
-# création de la frame principale stockant toutes les pages
+# creation de la frame principale stockant toutes les pages
 
 F = tk.Frame(Window)
 F.bind("<KeyPress>", keydown)
@@ -128,7 +128,7 @@ def Affiche(Game):
         y *= L
         canvas.create_rectangle(x, H - y, x + L, H - y - L, fill=coul)
 
-    # dessin du décors
+    # dessin du decors
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
@@ -159,7 +159,7 @@ class Game:
         self.PlayerPos = [0, HAUTEUR - 1]
 
     def Doo(self, action):
-        #  annulation des déplacements vers un mur
+        #  annulation des deplacements vers un mur
         if self.PlayerPos[0] == 0 and action == 0:  return 0
         if self.PlayerPos[0] == LARGEUR - 1 and action == 2:  return 0
 
@@ -183,7 +183,7 @@ class Game:
         if self.PlayerPos[1] == 0:           P[5] = P[6] = P[7] = 0  # mur bas
         if self.PlayerPos[1] == HAUTEUR - 1:   P[1] = P[2] = P[3] = 0  # mur haut
 
-        # tirage aléa
+        # tirage alea
         totProb = sum(P)
         rd = random.randrange(0, totProb) + 1
         choix = 0
@@ -191,7 +191,7 @@ class Game:
             rd -= P[choix]
             choix += 1
 
-        # traduction 0-7 => déplacement
+        # traduction 0-7 => deplacement
         if choix in [7, 0, 1]: self.PlayerPos[0] -= 1
         if choix in [3, 4, 5]: self.PlayerPos[0] += 1
         if choix in [1, 2, 3]: self.PlayerPos[1] += 1
@@ -218,7 +218,7 @@ class Game:
 
 ###########################################################
 #
-#   découvrez le jeu en jouant au clavier
+#   decouvrez le jeu en jouant au clavier
 #
 ###########################################################
 
@@ -232,21 +232,29 @@ def JeuClavier():
 
     global LastKey
 
+    """
     r = 0  # reward
     if LastKey != '0':
         if LastKey == Keys[0]: G.Do(0)
         if LastKey == Keys[1]: G.Do(1)
         if LastKey == Keys[2]: G.Do(2)
         if LastKey == Keys[3]: G.Do(3)
+    """
+    JeuIA()
 
     Affiche(G)
-    LastKey = '0'
+    # LastKey = '0'
     Window.after(500, JeuClavier)
+
+
+def JeuIA():
+    SimulGame()
+    G.Do(random.randrange(0, 4))
 
 
 ###########################################################
 #
-#  simulateur de partie aléatoire
+#  simulateur de partie aleatoire
 #
 ###########################################################
 
@@ -352,7 +360,7 @@ def GetRecompenseMoyenneSommeTransitionsEntreEtat():
     return ListRecompenseMoyenneSommeTransitionEntreEtat
 
 
-def SimulGame():  # il n y a pas de notion de "fin de partie"
+def SimulGame():  # il n'y a pas de notion de "fin de partie"
     Q = np.array([0, -1, 0, 1, 0], dtype=np.int32)
 
     G = Game()
@@ -360,14 +368,13 @@ def SimulGame():  # il n y a pas de notion de "fin de partie"
     for i in range(100):
         action = random.randrange(0, 4)
         etatActionInitial = UpdateNbChoixActionsTab(G, action)
-        print("i=", i)
-        print(etatActionInitial[1])
         r = G.Do(action)
         reward += r
-        # UpdateNbTransitionsEtat(etatActionInitial, G.Grille)
-        # UpdateSommeRecompensesTransitionEntreEtat(etatActionInitial, G.Grille, reward)
+        UpdateNbTransitionsEtat(etatActionInitial, G.PlayerPos)
+        UpdateSommeRecompensesTransitionEntreEtat(etatActionInitial, G.PlayerPos, reward)
     ListProbabiliteTransitionEntreEtat = GetProbabiliteTransitionsEtat()
-    ListRecompenseMoyenneSommeTransitionEntreEtat = GetRecompenseMoyenneSommeTransitionsEntreEtat()
+    #ListRecompenseMoyenneSommeTransitionEntreEtat = GetRecompenseMoyenneSommeTransitionsEntreEtat()
+    
 
     return reward
 
