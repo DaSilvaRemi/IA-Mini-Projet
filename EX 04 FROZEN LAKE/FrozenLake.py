@@ -1,7 +1,6 @@
 import tkinter as tk
 import random
 
-import numpy
 import numpy as np
 import copy
 
@@ -310,11 +309,11 @@ def UpdateSommeRecompensesTransitionEntreEtat(etatActionInitial: list[list, tupl
         if ListeIsEqual(etatPrime, etatTransitoire):
             avoirEtatTransitoireDansSommeRecompenseTransitionEntreEtat = True
             # [EtatPrime, [EtatInitial, [Action]], nbTransitions]
-            etatActionGrille = choixActionsDuringEtat[0]
+            etatActionPos = choixActionsDuringEtat[0]
             # [EtatInitial, [Action]]  -> EtatInitial
             etatInitial = etatActionInitial[0]
 
-            if ListeIsEqual(etatActionGrille, etatInitial):
+            if ListeIsEqual(etatActionPos, etatInitial):
                 avoirEtatInitialDansSommeRecompenseTransistionEntreEtat = True
                 sommesRecompenseTransitionEntreEtat[2] = sommeRecompense + reward
 
@@ -327,12 +326,12 @@ def GetProbabiliteTransitionsEtat():
     ListProbabiliteTransitionEntreEtat = []
 
     for choixActionPendantEtat in ListNbChoixActionsPendantEtat:
-        grilleEtat = choixActionPendantEtat[0]
+        etatActionPos = choixActionPendantEtat[0]
         for transitionEntreEtat in ListNbTransisitonsEntreEtat:
             etatPrime, choixActionsPendantEtatInitial, nbTransitions = transitionEntreEtat
             etatInitial, actionEtatInitial = choixActionsPendantEtatInitial
 
-            if (grilleEtat == etatInitial).all():
+            if ListeIsEqual(etatActionPos, etatInitial):
                 prob = nbTransitions / actionEtatInitial[1] if actionEtatInitial != 0 else 0
                 ListProbabiliteTransitionEntreEtat.append([prob, transitionEntreEtat])
     return ListProbabiliteTransitionEntreEtat
@@ -347,7 +346,7 @@ def GetRecompenseMoyenneSommeTransitionsEntreEtat():
         for sommeRecompensesTransitionEntreEtat in ListSommeRecompensesTransitionEntreEtat:
             etatPrimeBis, choixActionsDuringEtat, sommeRecompense = sommeRecompensesTransitionEntreEtat
 
-            if (etatPrimeBis == etatPrime).all():
+            if ListeIsEqual(etatPrime, etatPrimeBis):
                 moyenneRecompense = sommeRecompense / nbTransitions if nbTransitions != 0 else 0
                 ListRecompenseMoyenneSommeTransitionEntreEtat.append([moyenneRecompense, transitionEntreEtat])
     return ListRecompenseMoyenneSommeTransitionEntreEtat
