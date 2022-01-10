@@ -37,16 +37,6 @@ GInit = np.array(Data, dtype=np.int8)
 GInit = np.flip(GInit, 0).transpose()
 
 tabPossibleAction = (0, 2, 4, 6)
-defaultNbActionPendantEtat: list[int, int] = [0, 0]
-defaultNbTransitionEtat: tuple[list, list] = ([0, 0], defaultNbActionPendantEtat)
-# [Etat transitoire, [EtatInit, actions], rewards]
-defaultSommeRecompenseTransitionsEntreEtat: list[list, tuple[np.ndarray, list], int] = [[0, 0], defaultNbTransitionEtat,
-                                                                                        0]
-
-ListNbChoixActionsPendantEtat: list[list[list, list]] = [[[0, 0], defaultNbActionPendantEtat]]
-# [Etat transitoire, [EtatInit, actions], nbTransitions]
-ListNbTransisitonsEntreEtat: list[list[list, tuple[list, list], int]] = [[[0, 0], defaultNbTransitionEtat, 0]]
-ListSommeRecompensesTransitionEntreEtat = [defaultSommeRecompenseTransitionsEntreEtat]
 
 LARGEUR = 13
 HAUTEUR = 17
@@ -267,99 +257,6 @@ def ListeIsEqual(l1: list, l2: list) -> bool:
     return True
 
 
-def UpdateNbChoixActionsTab(G: Game, action: int) -> list[list, tuple]:
-    action = tabPossibleAction[action]
-
-    for choixActionPendantEtat in ListNbChoixActionsPendantEtat:
-        etatPlayer, actionEtat = choixActionPendantEtat
-        if ListeIsEqual(etatPlayer, G.PlayerPos) and action == actionEtat[0]:
-            actionEtat[1] += 1
-            return [G.PlayerPos, actionEtat]
-
-    actionEtat = defaultNbActionPendantEtat.copy()
-    actionEtat[0] = action
-    actionEtat[1] += 1
-    state = [G.PlayerPos, actionEtat]
-    ListNbChoixActionsPendantEtat.append(state)
-    return state
-
-
-def UpdateNbTransitionsEtat(etatActionInitial: list[list, tuple], etatTransitoire: list):
-    avoirEtatTransitoireDansListNbTransisitonsEntreEtat = False
-    avoirEtatInitialDansNbTransitionEntreEtat = False
-
-    for transitionEntreEtat in ListNbTransisitonsEntreEtat:
-        etatPrime, choixActionsDuringEtat, nbTransitions = transitionEntreEtat
-
-        if ListeIsEqual(etatPrime, etatTransitoire):
-            avoirEtatTransitoireDansListNbTransisitonsEntreEtat = True
-            # [EtatPrime, [EtatInitial, [Action]], nbTransitions]
-            etatActionPos = choixActionsDuringEtat[0]
-            # [EtatInitial, [Action]]  -> EtatInitial
-            etatInitial = etatActionInitial[0]
-
-            if ListeIsEqual(etatActionPos, etatInitial):
-                avoirEtatInitialDansNbTransitionEntreEtat = True
-                transitionEntreEtat[2] = nbTransitions + 1
-
-    if not avoirEtatTransitoireDansListNbTransisitonsEntreEtat or not avoirEtatInitialDansNbTransitionEntreEtat:
-        ListNbTransisitonsEntreEtat.append([etatTransitoire, etatActionInitial, 0])
-
-
-def UpdateSommeRecompensesTransitionEntreEtat(etatActionInitial: list[list, tuple], etatTransitoire: list,
-                                              reward):
-    avoirEtatTransitoireDansSommeRecompenseTransitionEntreEtat = False
-    avoirEtatInitialDansSommeRecompenseTransistionEntreEtat = False
-
-    for sommesRecompenseTransitionEntreEtat in ListSommeRecompensesTransitionEntreEtat:
-        etatPrime, choixActionsDuringEtat, sommeRecompense = sommesRecompenseTransitionEntreEtat
-
-        if ListeIsEqual(etatPrime, etatTransitoire):
-            avoirEtatTransitoireDansSommeRecompenseTransitionEntreEtat = True
-            # [EtatPrime, [EtatInitial, [Action]], nbTransitions]
-            etatActionPos = choixActionsDuringEtat[0]
-            # [EtatInitial, [Action]]  -> EtatInitial
-            etatInitial = etatActionInitial[0]
-
-            if ListeIsEqual(etatActionPos, etatInitial):
-                avoirEtatInitialDansSommeRecompenseTransistionEntreEtat = True
-                sommesRecompenseTransitionEntreEtat[2] = sommeRecompense + reward
-
-    if not avoirEtatTransitoireDansSommeRecompenseTransitionEntreEtat or not avoirEtatInitialDansSommeRecompenseTransistionEntreEtat:
-        ListNbTransisitonsEntreEtat.append([etatTransitoire, etatActionInitial, 0])
-
-
-def GetProbabiliteTransitionsEtat():
-    global ListNbChoixActionsPendantEtat, ListNbTransisitonsEntreEtat
-    ListProbabiliteTransitionEntreEtat = []
-
-    for choixActionPendantEtat in ListNbChoixActionsPendantEtat:
-        etatActionPos = choixActionPendantEtat[0]
-        for transitionEntreEtat in ListNbTransisitonsEntreEtat:
-            etatPrime, choixActionsPendantEtatInitial, nbTransitions = transitionEntreEtat
-            etatInitial, actionEtatInitial = choixActionsPendantEtatInitial
-
-            if ListeIsEqual(etatActionPos, etatInitial):
-                prob = nbTransitions / actionEtatInitial[1] if actionEtatInitial != 0 else 0
-                ListProbabiliteTransitionEntreEtat.append([prob, transitionEntreEtat])
-    return ListProbabiliteTransitionEntreEtat
-
-
-def GetRecompenseMoyenneSommeTransitionsEntreEtat():
-    global ListNbTransisitonsEntreEtat, ListSommeRecompensesTransitionEntreEtat
-    ListRecompenseMoyenneSommeTransitionEntreEtat = []
-
-    for transitionEntreEtat in ListNbTransisitonsEntreEtat:
-        etatPrime, choixActionsPendantEtatInitial, nbTransitions = transitionEntreEtat
-        for sommeRecompensesTransitionEntreEtat in ListSommeRecompensesTransitionEntreEtat:
-            etatPrimeBis, choixActionsDuringEtat, sommeRecompense = sommeRecompensesTransitionEntreEtat
-
-            if ListeIsEqual(etatPrime, etatPrimeBis):
-                moyenneRecompense = sommeRecompense / nbTransitions if nbTransitions != 0 else 0
-                ListRecompenseMoyenneSommeTransitionEntreEtat.append([moyenneRecompense, transitionEntreEtat])
-    return ListRecompenseMoyenneSommeTransitionEntreEtat
-
-
 def SimulGame():  # il n'y a pas de notion de "fin de partie"
     Q = np.array([0, -1, 0, 1, 0], dtype=np.int32)
 
@@ -367,15 +264,8 @@ def SimulGame():  # il n'y a pas de notion de "fin de partie"
     reward = 0
     for i in range(100):
         action = random.randrange(0, 4)
-        etatActionInitial = UpdateNbChoixActionsTab(G, action)
         r = G.Do(action)
         reward += r
-        UpdateNbTransitionsEtat(etatActionInitial, G.PlayerPos)
-        UpdateSommeRecompensesTransitionEntreEtat(etatActionInitial, G.PlayerPos, reward)
-    ListProbabiliteTransitionEntreEtat = GetProbabiliteTransitionsEtat()
-    #ListRecompenseMoyenneSommeTransitionEntreEtat = GetRecompenseMoyenneSommeTransitionsEntreEtat()
-    
-
     return reward
 
 
