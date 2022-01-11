@@ -283,9 +283,6 @@ def ListeIsEqual(l1: list, l2: list) -> bool:
 def Update_nb_de_fois_action_a_depuis_A(pos_player_A: list, action: int) -> None:
     global nb_de_fois_action_a_depuis_A
     # Liste vide donc on lui ajoute directement la valeur
-    if len(nb_de_fois_action_a_depuis_A) == 0:
-        nb_de_fois_action_a_depuis_A.append([pos_player_A, action, 1])
-        return None
 
     # checker dans la liste si on n'a pas déjà cette enchaînement position + action
     for i in range(0, len(nb_de_fois_action_a_depuis_A)):
@@ -297,7 +294,7 @@ def Update_nb_de_fois_action_a_depuis_A(pos_player_A: list, action: int) -> None
 
     # Arriver ici signifie ne pas avoir trouvé d'occurence de sous-liste contenant position + action
     # On crée alors une nouvelle liste, que l'on append à la principale
-    nb_de_fois_action_a_depuis_A.append([pos_player_A, action, 1])
+    nb_de_fois_action_a_depuis_A.append([pos_player_A.copy(), action, 1])
     return None
 
 
@@ -310,14 +307,16 @@ def Update_nb_de_fois_action_a_depuis_A_vers_B(pos_player_A: list, action: int, 
         pos_player_A_actuel, pos_player_B_actuel, action_actuel, nb_action_depuis_A_vers_B = an_action_a_depuis_a_vers_b
 
         # Test des positions A et B avec l'action réalisé afin d'atteindre la position B à partir de  la position A
-        if ListeIsEqual(pos_player_A, pos_player_A_actuel) and action == action_actuel and ListeIsEqual(pos_player_B, pos_player_B_actuel):
+        if ListeIsEqual(pos_player_A, pos_player_A_actuel) and action == action_actuel and ListeIsEqual(pos_player_B,
+                                                                                                        pos_player_B_actuel):
             nb_action_depuis_A_vers_B += 1
             return None
 
-    nb_de_fois_action_a_depuis_A_vers_B.append([pos_player_A, pos_player_B, action, 1])
+    nb_de_fois_action_a_depuis_A_vers_B.append([pos_player_A.copy(), pos_player_B.copy(), action, 1])
 
 
-def Update_somme_recompense_action_a_depuis_A_vers_B(pos_player_A: list, action: int, pos_player_B: list, recompense: int) -> None:
+def Update_somme_recompense_action_a_depuis_A_vers_B(pos_player_A: list, action: int, pos_player_B: list,
+                                                     recompense: int) -> None:
     global somme_recompense_action_a_depuis_A_vers_B
     # Pour chaque Somme stockée dans la liste de somme
     for an_somme_recompense_action_a_depuis_A_vers_B in somme_recompense_action_a_depuis_A_vers_B:
@@ -326,11 +325,12 @@ def Update_somme_recompense_action_a_depuis_A_vers_B(pos_player_A: list, action:
         pos_player_A_actuel, pos_player_B_actuel, action_actuel, somme_recompense = an_somme_recompense_action_a_depuis_A_vers_B
 
         # Test des positions A et B avec l'action réalisé afin d'atteindre la position B à partir de  la position A
-        if  ListeIsEqual(pos_player_A, pos_player_A_actuel) and ListeIsEqual(pos_player_B, pos_player_B_actuel) and action == action_actuel:
+        if ListeIsEqual(pos_player_A, pos_player_A_actuel) and ListeIsEqual(pos_player_B,
+                                                                            pos_player_B_actuel) and action == action_actuel:
             somme_recompense += recompense
             return None
 
-    somme_recompense_action_a_depuis_A_vers_B.append([pos_player_A, pos_player_B, action, recompense])
+    somme_recompense_action_a_depuis_A_vers_B.append([pos_player_A.copy(), pos_player_B.copy(), action, recompense])
 
 
 def Set_proba_deplacement_action_a_depuis_A_vers_B() -> None:
@@ -343,7 +343,6 @@ def Set_proba_deplacement_action_a_depuis_A_vers_B() -> None:
     nb_de_fois_action_a_depuis_A
     """
 
-    
     for i in range(0, len(nb_de_fois_action_a_depuis_A_vers_B)):
         ptA, ptB, action, nb_occ = nb_de_fois_action_a_depuis_A_vers_B[i]
         ptA_x = ptA[0]
@@ -351,20 +350,19 @@ def Set_proba_deplacement_action_a_depuis_A_vers_B() -> None:
 
         somme_valeur_autour_case = 0
 
-        #Sommes des transitions depuis une case C vers les cases voisines
+        # Sommes des transitions depuis une case C vers les cases voisines
 
         for j in range(0, len(nb_de_fois_action_a_depuis_A)):
             ptA_bis, action_bis, nb_occ_bis = nb_de_fois_action_a_depuis_A[j]
-            
-            if ListeIsEqual(ptA_bis , ptA):
+
+            if ListeIsEqual(ptA_bis, ptA):
                 somme_valeur_autour_case += nb_occ_bis
-        
+
         # Pourcentage p_barre d'aller de A vers B
         pourcentage = nb_occ / somme_valeur_autour_case if somme_valeur_autour_case != 0 else 0
 
         proba_deplacement_action_a_depuis_A_vers_B.append([ptA, ptB, action, pourcentage])
 
-        
     """
         # for j in range(0, len(nb_de_fois_action_a_depuis_A)):
         #     ptA_bis = nb_de_fois_action_a_depuis_A[j][0]
@@ -373,28 +371,29 @@ def Set_proba_deplacement_action_a_depuis_A_vers_B() -> None:
         #     if (abs(ptA_bis_x - ptA_x) <= 1) and (abs(ptA_bis_y - ptA_y) <= 1):
         #         # Ici on a trouvé une case qui est dans l'étoile autour de la case actuelle
     """
-                
+
     return
 
 
 def Set_moyenne_recompense_action_a_depuis_A_vers_B() -> None:
     global moyenne_recompense_action_a_depuis_A_vers_B, somme_recompense_action_a_depuis_A_vers_B, nb_de_fois_action_a_depuis_A_vers_B
 
-    #Pour chaque action on récupère depuis A vers B on récupère les différentes variables
+    # Pour chaque action on récupère depuis A vers B on récupère les différentes variables
     for an_action_a_depuis_a_vers_b in nb_de_fois_action_a_depuis_A_vers_B:
         pos_player_A_actuel, pos_player_B_actuel, action_actuel, nb_action_depuis_A_vers_B = an_action_a_depuis_a_vers_b
 
-        #Pour chaque somme de récompense pour une action on récupère depuis A vers B on récupère les différentes variables
+        # Pour chaque somme de récompense pour une action on récupère depuis A vers B on récupère les différentes variables
         for an_somme_recompense_action_a_depuis_A_vers_B in somme_recompense_action_a_depuis_A_vers_B:
             pos_player_A_actuel_bis, pos_player_B_actuel_bis, action_actuel_bis, somme_recompense = an_somme_recompense_action_a_depuis_A_vers_B
 
-            #Si les positions sont les mêmes et l'action est la même dans ce cas on ajoute la moyenne de la somme / nb actions à la liste
-            if ListeIsEqual(pos_player_A_actuel, pos_player_A_actuel_bis) and ListeIsEqual(pos_player_B_actuel, pos_player_B_actuel_bis) and action_actuel == action_actuel_bis:
+            # Si les positions sont les mêmes et l'action est la même dans ce cas on ajoute la moyenne de la somme / nb actions à la liste
+            if ListeIsEqual(pos_player_A_actuel, pos_player_A_actuel_bis) and ListeIsEqual(pos_player_B_actuel,
+                                                                                           pos_player_B_actuel_bis) and action_actuel == action_actuel_bis:
                 moyenne_recompense = somme_recompense / nb_action_depuis_A_vers_B if nb_action_depuis_A_vers_B else 0
-                moyenne_recompense_action_a_depuis_A_vers_B.append([pos_player_A_actuel, pos_player_B_actuel, action_actuel, moyenne_recompense])
+                moyenne_recompense_action_a_depuis_A_vers_B.append(
+                    [pos_player_A_actuel, pos_player_B_actuel, action_actuel, moyenne_recompense])
                 break
-        
-            
+
 
 def SimulateGame():  # il n'y a pas de notion de "fin de partie"
     Q = np.array([0, -1, 0, 1, 0], dtype=np.int32)
@@ -408,13 +407,13 @@ def SimulateGame():  # il n'y a pas de notion de "fin de partie"
 
         # Position avant mouvement
         pos_player_A = G.PlayerPos
-        
+
         # On fait faire une action au joueur
         r = G.Do(action)
 
         # Position après mouvement
         pos_player_B = G.PlayerPos
-        
+
         # Ajout du reward actuel à celui global
         reward += r
 
