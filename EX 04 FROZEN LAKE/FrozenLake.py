@@ -2,7 +2,7 @@ import tkinter as tk
 import random
 
 import numpy as np
-import copy
+#import copy
 
 # voici les 4 touches utilisees pour les deplacements  gauche/haut/droite/bas
 
@@ -36,7 +36,11 @@ Data = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 GInit = np.array(Data, dtype=np.int8)
 GInit = np.flip(GInit, 0).transpose()
 
-tab_possible_action = (0, 2, 4, 6)
+tab_possible_action = [
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9 
+]
 
 nb_de_fois_action_a_depuis_A = []
 nb_de_fois_action_a_depuis_A_vers_B = []
@@ -222,7 +226,7 @@ class Game:
             self.ResetPlayerPos()
             return 100
 
-        return 0
+        return 1
 
     def Do(self, action):
         reward = self.Doo(action)
@@ -394,23 +398,54 @@ def Set_moyenne_recompense_action_a_depuis_A_vers_B() -> None:
 
 
 def SimulateGame():  # il n'y a pas de notion de "fin de partie"
-    Q = np.zeros((len(GInit) * len(GInit[0]), 8), dtype=np.int32)
-
     G = Game()
+
+    etats = []
+
+    Q = np.zeros((  len(GInit) * len(GInit[0])  , 9))
+    """X = np.tile(G.PlayerPos[0], 100)
+    Y = np.tile(G.PlayerPos[1], 100)
+    A = np.tile([0] * 9, 100)
+    I = np.arange(100)"""
+
     reward = 0
     for i in range(100):
         # Randomisation des actions à faire
         action = random.randrange(0, 4)
-        real_action = tab_possible_action[action]
 
         # Position avant mouvement
-        pos_player_A = G.PlayerPos
+        pos_player_A = G.PlayerPos.copy()
 
         # On fait faire une action au joueur
         r = G.Do(action)
 
         # Position après mouvement
-        pos_player_B = G.PlayerPos
+        pos_player_B = G.PlayerPos.copy()
+
+
+        for x in range(0, 3):
+            for y in range(0, 3):
+                posx = pos_player_A[0] + x - 1
+                posy = pos_player_A[1] + y - 1
+                if posx == pos_player_B[0] and posy == pos_player_B[1]:
+                    real_action = tab_possible_action[3 * y + x]
+                    break
+                    """
+                    # [[
+                    #     0, 1, 2 
+                    #     3, 4, 5
+                    #     6, 7, 8
+                    # ]]
+                    # [[
+                    #     (x - 1, y + 1), (x, y + 1), (x + 1, y + 1)
+                    #     (x - 1, y), (x, y), (x + 1, y)
+                    #     (x - 1, y - 1), (x, y - 1), (x + 1, y - 1)
+                    # ]]
+                    """
+
+        #real_action = tab_possible_action[action]
+
+        etats.append([pos_player_B, r])
 
         # Ajout du reward actuel à celui global
         reward += r
@@ -420,28 +455,54 @@ def SimulateGame():  # il n'y a pas de notion de "fin de partie"
         Update_nb_de_fois_action_a_depuis_A_vers_B(pos_player_A, real_action, pos_player_B)
         Update_somme_recompense_action_a_depuis_A_vers_B(pos_player_A, real_action, pos_player_B, r)
 
-    # breakpoint()
-    Set_proba_deplacement_action_a_depuis_A_vers_B()
-    Set_moyenne_recompense_action_a_depuis_A_vers_B()
+        Set_proba_deplacement_action_a_depuis_A_vers_B()
+        Set_moyenne_recompense_action_a_depuis_A_vers_B()
 
-    QiterPrecedente = Q.copy()
-    while True:
-        Qcurrent = Q.copy()
+        QiterPrecedente = Q.copy()
+        k = 0
+        variationAcceptable = False
+        while (not variationAcceptable):
+            Qcurrent = Q.copy()
+            variationAcceptable = True
 
-        result = 0
+            for an_proba_deplacement_action_a_depuis_A_vers_B in proba_deplacement_action_a_depuis_A_vers_B:
+                ptA_prob, ptB_prob, action_prob, proba = an_proba_deplacement_action_a_depuis_A_vers_B
 
-        for an_proba_deplacement_action_a_depuis_A_vers_B in proba_deplacement_action_a_depuis_A_vers_B:
-            ptA_prob, ptB_prob, action_prob, proba = an_proba_deplacement_action_a_depuis_A_vers_B
-            for an_moyenne_recompense_action_a_depuis_A_vers_B in moyenne_recompense_action_a_depuis_A_vers_B:
-                ptA_moy, ptB_moy, action_moy, moy = moyenne_recompense_action_a_depuis_A_vers_B
+                for an_moyenne_recompense_action_a_depuis_A_vers_B in moyenne_recompense_action_a_depuis_A_vers_B:
+                    ptA_moy, ptB_moy, action_moy, moy = an_moyenne_recompense_action_a_depuis_A_vers_B
 
-                if ListeIsEqual(ptA_prob, ptA_moy) and ListeIsEqual(ptB_prob, ptB_moy) and action_prob == action_moy:
-                    return
+                    if ListeIsEqual(ptA_prob, ptA_moy) and ListeIsEqual(ptB_prob, ptB_moy) and action_prob == action_moy:
+                        max = max_Q_eprime_aprime(Qcurrent, etats[k][0])
+                        Q[k][action] += proba * (moy + max)
+                        Qcurrent =  Q.copy()
+                        #Q[I, X, Y, A] += proba * (moy + Q[I, X + 1, Y + 1, A].moy())
+
+            # breakpoint()
+            QDiff = np.subtract(Qcurrent, QiterPrecedente)
+            for i in range (0, len(QDiff)):
+                for j in range (0, len(QDiff[i])):
+                    if QDiff[i][j] >= 0.01:
+                        variationAcceptable = False
+                        break
+            k += 1
 
     return reward
 
-def Get_Q_value_from_pos_action(pos, action):
-    return None
+
+def max_Q_eprime_aprime(Q, ptB) -> int:
+    global moyenne_recompense_action_a_depuis_A_vers_B
+    max = -10000
+
+    for recomp_list in moyenne_recompense_action_a_depuis_A_vers_B:
+        ptB_recomp = recomp_list[1]
+        if not ListeIsEqual(ptB_recomp, ptB):
+            continue
+
+        if recomp_list[3] > max:
+            max = recomp_list[3]
+
+    return max
+
 
 
 #####################################################################################
