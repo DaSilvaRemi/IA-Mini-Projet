@@ -387,16 +387,14 @@ def Set_moyenne_recompense_action_a_depuis_A_vers_B() -> None:
             pos_player_A_actuel_bis, pos_player_B_actuel_bis, action_actuel_bis, somme_recompense = an_somme_recompense_action_a_depuis_A_vers_B
 
             # Si les positions sont les mêmes et l'action est la même dans ce cas on ajoute la moyenne de la somme / nb actions à la liste
-            if ListeIsEqual(pos_player_A_actuel, pos_player_A_actuel_bis) and ListeIsEqual(pos_player_B_actuel,
-                                                                                           pos_player_B_actuel_bis) and action_actuel == action_actuel_bis:
+            if ListeIsEqual(pos_player_A_actuel, pos_player_A_actuel_bis) and ListeIsEqual(pos_player_B_actuel, pos_player_B_actuel_bis) and action_actuel == action_actuel_bis:
                 moyenne_recompense = somme_recompense / nb_action_depuis_A_vers_B if nb_action_depuis_A_vers_B else 0
-                moyenne_recompense_action_a_depuis_A_vers_B.append(
-                    [pos_player_A_actuel, pos_player_B_actuel, action_actuel, moyenne_recompense])
+                moyenne_recompense_action_a_depuis_A_vers_B.append([pos_player_A_actuel, pos_player_B_actuel, action_actuel, moyenne_recompense])
                 break
 
 
 def SimulateGame():  # il n'y a pas de notion de "fin de partie"
-    Q = np.array([0, -1, 0, 1, 0], dtype=np.int32)
+    Q = np.zeros((len(GInit) * len(GInit[0]), 8), dtype=np.int32)
 
     G = Game()
     reward = 0
@@ -425,7 +423,25 @@ def SimulateGame():  # il n'y a pas de notion de "fin de partie"
     # breakpoint()
     Set_proba_deplacement_action_a_depuis_A_vers_B()
     Set_moyenne_recompense_action_a_depuis_A_vers_B()
+
+    QiterPrecedente = Q.copy()
+    while True:
+        Qcurrent = Q.copy()
+
+        result = 0
+
+        for an_proba_deplacement_action_a_depuis_A_vers_B in proba_deplacement_action_a_depuis_A_vers_B:
+            ptA_prob, ptB_prob, action_prob, proba = an_proba_deplacement_action_a_depuis_A_vers_B
+            for an_moyenne_recompense_action_a_depuis_A_vers_B in moyenne_recompense_action_a_depuis_A_vers_B:
+                ptA_moy, ptB_moy, action_moy, moy = moyenne_recompense_action_a_depuis_A_vers_B
+
+                if ListeIsEqual(ptA_prob, ptA_moy) and ListeIsEqual(ptB_prob, ptB_moy) and action_prob == action_moy:
+                    return
+
     return reward
+
+def Get_Q_value_from_pos_action(pos, action):
+    return None
 
 
 #####################################################################################
