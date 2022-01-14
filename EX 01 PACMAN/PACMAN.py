@@ -3,6 +3,9 @@ import tkinter as tk
 from tkinter import font as tkfont
 import numpy as np
 
+nbDeplacement = 0
+nbCollisionFantome = 0
+
 #################################################################
 ##
 ##  variables du jeu 
@@ -70,7 +73,7 @@ def AfficherPage(id):
 
 def WindowAnim():
     MainLoop()
-    Window.after(500, WindowAnim)
+    Window.after(1, WindowAnim)
 
 
 Window.after(100, WindowAnim)
@@ -407,6 +410,10 @@ def Affiche():
                        fill="yellow", font=PoliceTexte)
     canvas.create_text(screeenWidth // 2, 15, text=f"Score : {Score}", fill="yellow", font=PoliceTexte)
 
+    canvas.create_text(40  , 15, text=f"{nbDeplacement}"     , fill="yellow", font=PoliceTexte)
+    canvas.create_text(100 , 15, text=f"{nbCollisionFantome}", fill="yellow", font=PoliceTexte)
+
+
 
 #################################################################
 ##
@@ -531,7 +538,9 @@ def GetCollidedGhost() -> list:
 
 
 def IA() -> None:
-    global PacManPos, Ghosts, Score, ChasseFantomeCompteur, Mode
+    global PacManPos, Ghosts, Score, ChasseFantomeCompteur, Mode, nbDeplacement, nbCollisionFantome
+
+    nbDeplacement += 1
 
     # déplacement Pacman
     L = PacManPossibleMove()
@@ -573,6 +582,7 @@ def IA() -> None:
                 G[1] = HAUTEUR // 2
         else:
             Score -= 25
+            nbCollisionFantome += 1
 
 
 #################################################################

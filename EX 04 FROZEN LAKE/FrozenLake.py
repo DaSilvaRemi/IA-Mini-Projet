@@ -268,8 +268,16 @@ def JeuIA():
     global QEA
     pos_x_player, pos_y_player = G.PlayerPos
 
-    QEA = SimulGame(100)
+    # QEA = SimulGame(100)
     action = np.argmax([QEA[pos_x_player, pos_y_player, index_action] for index_action in range(0, ACTIONS)])
+    if action == 0:
+        print("gauche")
+    if action == 1:
+        print("haut")
+    if action == 2:
+        print("droite")
+    if action == 3:
+        print("bas")
 
     G.Do(action)
     Affiche(G)
@@ -294,8 +302,33 @@ def SimulGame(nb_simulations):   # il n y a pas de notion de "fin de partie"
         # Action choisi
         proba_epsilon = random.uniform(0.0, 1.0)
 
+        action = 0
+
         if proba_epsilon <= EPSILON:
-            action = np.argmax([QEA[pos_x_player_A, pos_y_player_A, index_action] for index_action in range(0, ACTIONS)])
+
+            recomp_exponentielle = []
+            recomp_somme = 0
+
+            proba_action = []
+
+            for i in range(0, ACTIONS):
+                recomp_actuelle = np.exp(QEA[pos_x_player_A, pos_y_player_A, i])
+                recomp_exponentielle.append(recomp_actuelle)
+                recomp_somme += recomp_actuelle
+                
+            for i in range(0, ACTIONS):
+                proba_action.append(recomp_exponentielle[i] / recomp_somme)
+
+            softmax_action = random.uniform(0.0, 1.0)
+
+            somme_actuelle = 0
+            for i in range(0, len(proba_action)):
+                somme_actuelle += proba_action[i]
+                if somme_actuelle >= softmax_action:
+                    action = i
+                    break
+
+
         else:
             action = random.randrange(0, 4)
 
@@ -385,6 +418,9 @@ def SimulGame(nb_simulations):   # il n y a pas de notion de "fin de partie"
 #####################################################################################
 #
 #  Mise en place de l'interface - ne pas toucher
+
+
+QEA = SimulGame(100000)
 
 AfficherPage(0)
 Window.after(500, JeuIA)
