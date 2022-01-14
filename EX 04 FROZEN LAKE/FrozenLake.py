@@ -41,6 +41,9 @@ LARGEUR = 13
 HAUTEUR = 17
 ACTIONS = 4
 GAMMA = 0.9
+EPSILON = 0.7
+
+QEA = np.zeros((LARGEUR, HAUTEUR, ACTIONS), dtype=float)
 
 nb_de_fois_action_a_depuis_A = np.zeros(
     (LARGEUR, HAUTEUR, ACTIONS), dtype=float)
@@ -262,10 +265,11 @@ def JeuClavier():
 
 
 def JeuIA():
+    global QEA
     pos_x_player, pos_y_player = G.PlayerPos
 
-    action = np.argmax([QEA[pos_x_player, pos_y_player, index_action]
-                       for index_action in range(0, ACTIONS)])
+    QEA = SimulGame(100)
+    action = np.argmax([QEA[pos_x_player, pos_y_player, index_action] for index_action in range(0, ACTIONS)])
 
     G.Do(action)
     Affiche(G)
@@ -280,7 +284,7 @@ def JeuIA():
 
 
 def SimulGame(nb_simulations):   # il n y a pas de notion de "fin de partie"
-    global nb_de_fois_action_a_depuis_A, nb_de_fois_action_a_depuis_A_vers_B, somme_recompense_action_a_depuis_A_vers_B
+    global QEA, nb_de_fois_action_a_depuis_A, nb_de_fois_action_a_depuis_A_vers_B, somme_recompense_action_a_depuis_A_vers_B
 
     G = Game()
     for i in range(nb_simulations):
@@ -288,7 +292,12 @@ def SimulGame(nb_simulations):   # il n y a pas de notion de "fin de partie"
         pos_x_player_A, pos_y_player_A = G.PlayerPos
 
         # Action choisi
-        action = random.randrange(0, 4)
+        proba_epsilon = random.uniform(0.0, 1.0)
+
+        if proba_epsilon <= EPSILON:
+            action = np.argmax([QEA[pos_x_player_A, pos_y_player_A, index_action] for index_action in range(0, ACTIONS)])
+        else:
+            action = random.randrange(0, 4)
 
         # Récompense
         r = G.Do(action)
@@ -377,7 +386,6 @@ def SimulGame(nb_simulations):   # il n y a pas de notion de "fin de partie"
 #
 #  Mise en place de l'interface - ne pas toucher
 
-QEA = SimulGame(100000)
 AfficherPage(0)
 Window.after(500, JeuIA)
 Window.mainloop()
