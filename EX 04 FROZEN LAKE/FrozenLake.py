@@ -1,16 +1,16 @@
+from math import gamma
 import tkinter as tk
 import random
-
 import numpy as np
-#import copy
+import copy
 
-# voici les 4 touches utilisees pour les deplacements  gauche/haut/droite/bas
+# voici les 4 touches utilisées pour les déplacements  gauche/haut/droite/bas
 
 Keys = ['q', 'z', 'd', 's']
 
 #################################################################################
 #
-#   Donnees de partie
+#   Données de partie
 #
 #################################################################################
 
@@ -33,38 +33,37 @@ Data = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 8]]
 
+
 GInit = np.array(Data, dtype=np.int8)
 GInit = np.flip(GInit, 0).transpose()
 
-tab_possible_action = [
-    1, 2, 3,
-    4, 5, 6,
-    7, 8, 9 
-]
-
-nb_de_fois_action_a_depuis_A = []
-nb_de_fois_action_a_depuis_A_vers_B = []
-somme_recompense_action_a_depuis_A_vers_B = []
-proba_deplacement_action_a_depuis_A_vers_B = []
-moyenne_recompense_action_a_depuis_A_vers_B = []
-
 LARGEUR = 13
 HAUTEUR = 17
+ACTIONS = 4
+GAMMA = 0.9
+
+nb_de_fois_action_a_depuis_A = np.zeros(
+    (LARGEUR, HAUTEUR, ACTIONS), dtype=float)
+nb_de_fois_action_a_depuis_A_vers_B = np.zeros(
+    (LARGEUR, HAUTEUR, ACTIONS, LARGEUR, HAUTEUR), dtype=float)
+somme_recompense_action_a_depuis_A_vers_B = np.zeros(
+    (LARGEUR, HAUTEUR, ACTIONS, LARGEUR, HAUTEUR), dtype=float)
+
 
 #################################################################################
 #
-#   creation de la fenetre principale  - NE PAS TOUCHER
+#   création de la fenetre principale  - NE PAS TOUCHER
 #
 #################################################################################
 
 
 L = 20  # largeur d'une case du jeu en pixel
 largeurPix = LARGEUR * L
-hauteurPix = (HAUTEUR + 1) * L
+hauteurPix = (HAUTEUR+1) * L
+
 
 Window = tk.Tk()
-# taille de la fenetre
-Window.geometry(str(largeurPix) + "x" + str(hauteurPix + 3))
+Window.geometry(str(largeurPix)+"x"+str(hauteurPix+3))   # taille de la fenetre
 Window.title("Frozen Lake")
 
 # gestion du clavier
@@ -78,7 +77,7 @@ def keydown(e):
         LastKey = e.char
 
 
-# creation de la frame principale stockant toutes les pages
+# création de la frame principale stockant toutes les pages
 
 F = tk.Frame(Window)
 F.bind("<KeyPress>", keydown)
@@ -111,26 +110,25 @@ Frame0 = CreerUnePage(0)
 canvas = tk.Canvas(Frame0, width=largeurPix, height=hauteurPix, bg="black")
 canvas.place(x=0, y=0)
 
-
 #   Dessine la grille de jeu - ne pas toucher
 
 
 def Affiche(Game):
     canvas.delete("all")
-    H = canvas.winfo_height() - 2
+    H = canvas.winfo_height()-2
 
     def MSG(coul, txt):
 
         canvas.create_rectangle(0, 0, largeurPix, 20, fill="black")
-        canvas.create_text(largeurPix // 2, 10,
+        canvas.create_text(largeurPix//2, 10,
                            font='Helvetica 12 bold', fill=coul, text=txt)
 
     def DrawCase(x, y, coul):
         x *= L
         y *= L
-        canvas.create_rectangle(x, H - y, x + L, H - y - L, fill=coul)
+        canvas.create_rectangle(x, H-y, x+L, H-y-L, fill=coul)
 
-    # dessin du decors
+    # dessin du décors
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
@@ -144,7 +142,6 @@ def Affiche(Game):
     DrawCase(Game.PlayerPos[0], Game.PlayerPos[1], "yellow")
 
     MSG("yellow", str(Game.Score))
-
 
 ################################################################################
 #
@@ -161,19 +158,19 @@ class Game:
         self.ResetPlayerPos()
 
     def ResetPlayerPos(self):
-        self.PlayerPos = [0, HAUTEUR - 1]
+        self.PlayerPos = [0, HAUTEUR-1]
 
     def Doo(self, action):
-        #  annulation des deplacements vers un mur
+        #  annulation des déplacements vers un mur
         if self.PlayerPos[0] == 0 and action == 0:
-            return 0
-        if self.PlayerPos[0] == LARGEUR - 1 and action == 2:
-            return 0
+            return -1
+        if self.PlayerPos[0] == LARGEUR-1 and action == 2:
+            return -1
 
         if self.PlayerPos[1] == 0 and action == 3:
-            return 0
-        if self.PlayerPos[1] == HAUTEUR - 1 and action == 1:
-            return 0
+            return -1
+        if self.PlayerPos[1] == HAUTEUR-1 and action == 1:
+            return -1
 
         # 0 ; left, 2: up, 4: right, 6: down
         P = [0] * 8
@@ -184,28 +181,28 @@ class Game:
 
         # plus on se rapproche de l'objectif, plus ca glisse
         for i in range(8):
-            P[i] += LARGEUR - self.PlayerPos[0] + (HAUTEUR - self.PlayerPos[1])
+            P[i] += LARGEUR-self.PlayerPos[0] + (HAUTEUR-self.PlayerPos[1])
 
         # gestion des murs
         if self.PlayerPos[0] == 0:
             P[7] = P[0] = P[1] = 0  # mur gauche
-        if self.PlayerPos[0] == LARGEUR - 1:
+        if self.PlayerPos[0] == LARGEUR-1:
             P[3] = P[4] = P[5] = 0  # mur droit
 
         if self.PlayerPos[1] == 0:
             P[5] = P[6] = P[7] = 0  # mur bas
-        if self.PlayerPos[1] == HAUTEUR - 1:
+        if self.PlayerPos[1] == HAUTEUR-1:
             P[1] = P[2] = P[3] = 0  # mur haut
 
-        # tirage alea
+        # tirage aléa
         totProb = sum(P)
-        rd = random.randrange(0, totProb) + 1
+        rd = random.randrange(0, totProb)+1
         choix = 0
         while P[choix] < rd:
             rd -= P[choix]
             choix += 1
 
-        # traduction 0-7 => deplacement
+        # traduction 0-7 => déplacement
         if choix in [7, 0, 1]:
             self.PlayerPos[0] -= 1
         if choix in [3, 4, 5]:
@@ -218,15 +215,15 @@ class Game:
         # gestion des collisions
 
         xP, yP = self.PlayerPos
-        if self.Grille[xP][yP] == 1:  # DEAD
+        if self.Grille[xP][yP] == 1:   # DEAD
             self.ResetPlayerPos()
             return -100
 
-        if self.Grille[xP][yP] == 8:  # WIN
+        if self.Grille[xP][yP] == 8:   # WIN
             self.ResetPlayerPos()
             return 100
 
-        return 1
+        return -1
 
     def Do(self, action):
         reward = self.Doo(action)
@@ -236,7 +233,7 @@ class Game:
 
 ###########################################################
 #
-#   decouvrez le jeu en jouant au clavier
+#   découvrez le jeu en jouant au clavier
 #
 ###########################################################
 
@@ -245,271 +242,142 @@ G = Game()
 
 def JeuClavier():
     F.focus_force()
+
     global LastKey
 
-    """
     r = 0  # reward
     if LastKey != '0':
-        if LastKey == Keys[0]: G.Do(0)
-        if LastKey == Keys[1]: G.Do(1)
-        if LastKey == Keys[2]: G.Do(2)
-        if LastKey == Keys[3]: G.Do(3)
-    """
-
-    JeuIA()
+        if LastKey == Keys[0]:
+            G.Do(0)
+        if LastKey == Keys[1]:
+            G.Do(1)
+        if LastKey == Keys[2]:
+            G.Do(2)
+        if LastKey == Keys[3]:
+            G.Do(3)
 
     Affiche(G)
-    """LastKey = '0'"""
+    LastKey = '0'
     Window.after(500, JeuClavier)
 
 
 def JeuIA():
-    SimulateGame()
-    G.Do(random.randrange(0, 4))
+    pos_x_player, pos_y_player = G.PlayerPos
 
+    action = np.argmax([QEA[pos_x_player, pos_y_player, index_action]
+                       for index_action in range(0, ACTIONS)])
+
+    G.Do(action)
+    Affiche(G)
+    if abs(G.Score < 300):
+        Window.after(500, JeuIA)
 
 ###########################################################
 #
-#  simulateur de partie aleatoire
+#  simulateur de partie aléatoire
 #
 ###########################################################
 
-def ListeIsEqual(l1: list, l2: list) -> bool:
-    if len(l1) != len(l2):
-        return False
 
-    for i in range(0, len(l1)):
-        if l1[i] != l2[i]:
-            return False
-    return True
+def SimulGame(nb_simulations):   # il n y a pas de notion de "fin de partie"
+    global nb_de_fois_action_a_depuis_A, nb_de_fois_action_a_depuis_A_vers_B, somme_recompense_action_a_depuis_A_vers_B
 
-
-def Update_nb_de_fois_action_a_depuis_A(pos_player_A: list, action: int) -> None:
-    global nb_de_fois_action_a_depuis_A
-    # Liste vide donc on lui ajoute directement la valeur
-
-    # checker dans la liste si on n'a pas déjà cette enchaînement position + action
-    for i in range(0, len(nb_de_fois_action_a_depuis_A)):
-        if nb_de_fois_action_a_depuis_A[i][0] == pos_player_A and nb_de_fois_action_a_depuis_A[i][1] == action:
-            # On a ici trouvé une sous-liste contenant la position et l'action.
-            # On ajoute donc 1 au compteur !
-            nb_de_fois_action_a_depuis_A[i][2] += 1
-            return None
-
-    # Arriver ici signifie ne pas avoir trouvé d'occurence de sous-liste contenant position + action
-    # On crée alors une nouvelle liste, que l'on append à la principale
-    nb_de_fois_action_a_depuis_A.append([pos_player_A.copy(), action, 1])
-    return None
-
-
-def Update_nb_de_fois_action_a_depuis_A_vers_B(pos_player_A: list, action: int, pos_player_B: list) -> None:
-    global nb_de_fois_action_a_depuis_A_vers_B
-
-    # Pour chaque Action stockée dans la liste d'action
-    for an_action_a_depuis_a_vers_b in nb_de_fois_action_a_depuis_A_vers_B:
-        # Dissociation de la liste en plusieurs variables
-        pos_player_A_actuel, pos_player_B_actuel, action_actuel, nb_action_depuis_A_vers_B = an_action_a_depuis_a_vers_b
-
-        # Test des positions A et B avec l'action réalisé afin d'atteindre la position B à partir de  la position A
-        if ListeIsEqual(pos_player_A, pos_player_A_actuel) and action == action_actuel and ListeIsEqual(pos_player_B,
-                                                                                                        pos_player_B_actuel):
-            nb_action_depuis_A_vers_B += 1
-            return None
-
-    nb_de_fois_action_a_depuis_A_vers_B.append([pos_player_A.copy(), pos_player_B.copy(), action, 1])
-
-
-def Update_somme_recompense_action_a_depuis_A_vers_B(pos_player_A: list, action: int, pos_player_B: list,
-                                                     recompense: int) -> None:
-    global somme_recompense_action_a_depuis_A_vers_B
-    # Pour chaque Somme stockée dans la liste de somme
-    for an_somme_recompense_action_a_depuis_A_vers_B in somme_recompense_action_a_depuis_A_vers_B:
-
-        # Dissociation de la liste en plusieurs variables
-        pos_player_A_actuel, pos_player_B_actuel, action_actuel, somme_recompense = an_somme_recompense_action_a_depuis_A_vers_B
-
-        # Test des positions A et B avec l'action réalisé afin d'atteindre la position B à partir de  la position A
-        if ListeIsEqual(pos_player_A, pos_player_A_actuel) and ListeIsEqual(pos_player_B,
-                                                                            pos_player_B_actuel) and action == action_actuel:
-            somme_recompense += recompense
-            return None
-
-    somme_recompense_action_a_depuis_A_vers_B.append([pos_player_A.copy(), pos_player_B.copy(), action, recompense])
-
-
-def Set_proba_deplacement_action_a_depuis_A_vers_B() -> None:
-    global nb_de_fois_action_a_depuis_A, nb_de_fois_action_a_depuis_A_vers_B, proba_deplacement_action_a_depuis_A_vers_B
-    """
-    proba_deplacement_action_a_depuis_A_vers_B
-        =
-    nb_de_fois_action_a_depuis_A_vers_B
-        /
-    nb_de_fois_action_a_depuis_A
-    """
-
-    for i in range(0, len(nb_de_fois_action_a_depuis_A_vers_B)):
-        ptA, ptB, action, nb_occ = nb_de_fois_action_a_depuis_A_vers_B[i]
-        ptA_x = ptA[0]
-        ptA_y = ptA[1]
-
-        somme_valeur_autour_case = 0
-
-        # Sommes des transitions depuis une case C vers les cases voisines
-
-        for j in range(0, len(nb_de_fois_action_a_depuis_A)):
-            ptA_bis, action_bis, nb_occ_bis = nb_de_fois_action_a_depuis_A[j]
-
-            if ListeIsEqual(ptA_bis, ptA):
-                somme_valeur_autour_case += nb_occ_bis
-
-        # Pourcentage p_barre d'aller de A vers B
-        pourcentage = nb_occ / somme_valeur_autour_case if somme_valeur_autour_case != 0 else 0
-
-        proba_deplacement_action_a_depuis_A_vers_B.append([ptA, ptB, action, pourcentage])
-
-    """
-        # for j in range(0, len(nb_de_fois_action_a_depuis_A)):
-        #     ptA_bis = nb_de_fois_action_a_depuis_A[j][0]
-        #     ptA_bis_x = ptA_bis[0]
-        #     ptA_bis_y = ptA_bis[1]
-        #     if (abs(ptA_bis_x - ptA_x) <= 1) and (abs(ptA_bis_y - ptA_y) <= 1):
-        #         # Ici on a trouvé une case qui est dans l'étoile autour de la case actuelle
-    """
-
-    return
-
-
-def Set_moyenne_recompense_action_a_depuis_A_vers_B() -> None:
-    global moyenne_recompense_action_a_depuis_A_vers_B, somme_recompense_action_a_depuis_A_vers_B, nb_de_fois_action_a_depuis_A_vers_B
-
-    # Pour chaque action on récupère depuis A vers B on récupère les différentes variables
-    for an_action_a_depuis_a_vers_b in nb_de_fois_action_a_depuis_A_vers_B:
-        pos_player_A_actuel, pos_player_B_actuel, action_actuel, nb_action_depuis_A_vers_B = an_action_a_depuis_a_vers_b
-
-        # Pour chaque somme de récompense pour une action on récupère depuis A vers B on récupère les différentes variables
-        for an_somme_recompense_action_a_depuis_A_vers_B in somme_recompense_action_a_depuis_A_vers_B:
-            pos_player_A_actuel_bis, pos_player_B_actuel_bis, action_actuel_bis, somme_recompense = an_somme_recompense_action_a_depuis_A_vers_B
-
-            # Si les positions sont les mêmes et l'action est la même dans ce cas on ajoute la moyenne de la somme / nb actions à la liste
-            if ListeIsEqual(pos_player_A_actuel, pos_player_A_actuel_bis) and ListeIsEqual(pos_player_B_actuel, pos_player_B_actuel_bis) and action_actuel == action_actuel_bis:
-                moyenne_recompense = somme_recompense / nb_action_depuis_A_vers_B if nb_action_depuis_A_vers_B else 0
-                moyenne_recompense_action_a_depuis_A_vers_B.append([pos_player_A_actuel, pos_player_B_actuel, action_actuel, moyenne_recompense])
-                break
-
-
-def SimulateGame():  # il n'y a pas de notion de "fin de partie"
     G = Game()
+    for i in range(nb_simulations):
+        # Etat initial
+        pos_x_player_A, pos_y_player_A = G.PlayerPos
 
-    etats = []
-
-    Q = np.zeros((  len(GInit) * len(GInit[0])  , 9))
-    """X = np.tile(G.PlayerPos[0], 100)
-    Y = np.tile(G.PlayerPos[1], 100)
-    A = np.tile([0] * 9, 100)
-    I = np.arange(100)"""
-
-    reward = 0
-    for i in range(100):
-        # Randomisation des actions à faire
+        # Action choisi
         action = random.randrange(0, 4)
 
-        # Position avant mouvement
-        pos_player_A = G.PlayerPos.copy()
-
-        # On fait faire une action au joueur
+        # Récompense
         r = G.Do(action)
 
-        # Position après mouvement
-        pos_player_B = G.PlayerPos.copy()
+        # Etat Prime e'
+        pos_x_player_B, pos_y_player_B = G.PlayerPos
 
+        # Nb de fois qu'une action à été réalisé depuis un état E
+        nb_de_fois_action_a_depuis_A[
+            pos_x_player_A,
+            pos_y_player_A,
+            action
+        ] += 1
 
-        for x in range(0, 3):
-            for y in range(0, 3):
-                posx = pos_player_A[0] + x - 1
-                posy = pos_player_A[1] + y - 1
-                if posx == pos_player_B[0] and posy == pos_player_B[1]:
-                    real_action = tab_possible_action[3 * y + x]
-                    break
-                    """
-                    # [[
-                    #     0, 1, 2 
-                    #     3, 4, 5
-                    #     6, 7, 8
-                    # ]]
-                    # [[
-                    #     (x - 1, y + 1), (x, y + 1), (x + 1, y + 1)
-                    #     (x - 1, y), (x, y), (x + 1, y)
-                    #     (x - 1, y - 1), (x, y - 1), (x + 1, y - 1)
-                    # ]]
-                    """
+        # Nb de fois qu'une transition à été réalisé entre un état E et un état E prime
+        nb_de_fois_action_a_depuis_A_vers_B[
+            pos_x_player_A,
+            pos_y_player_A,
+            action,
+            pos_x_player_B,
+            pos_y_player_B
+        ] += 1
 
-        #real_action = tab_possible_action[action]
+        # Somme des récompenses qu'une action à été réalisé depuis un état E vers un état E prime
+        somme_recompense_action_a_depuis_A_vers_B[
+            pos_x_player_A,
+            pos_y_player_A,
+            action,
+            pos_x_player_B,
+            pos_y_player_B
+        ] += r
 
-        etats.append([pos_player_B, r])
+    # Application du broadcasting numpy afin de pouvoir additionner les matrices
+    nb_de_fois_action_a_depuis_A_broadcast = nb_de_fois_action_a_depuis_A[:, :, :, np.newaxis, np.newaxis]
 
-        # Ajout du reward actuel à celui global
-        reward += r
+    # Probabilité de déplacement d'un état E vers un état Eprime en réalisant une action
+    proba_deplacement_action_a_depuis_A_vers_B = np.divide(
+        nb_de_fois_action_a_depuis_A_vers_B,
+        nb_de_fois_action_a_depuis_A_broadcast,
+        out=np.zeros_like
+        (
+            nb_de_fois_action_a_depuis_A_vers_B,
+            dtype=float
+        ),
+        where=nb_de_fois_action_a_depuis_A_broadcast != 0)
 
-        # Update des listes
-        Update_nb_de_fois_action_a_depuis_A(pos_player_A, real_action)
-        Update_nb_de_fois_action_a_depuis_A_vers_B(pos_player_A, real_action, pos_player_B)
-        Update_somme_recompense_action_a_depuis_A_vers_B(pos_player_A, real_action, pos_player_B, r)
+    moy_recompense_action_a_depuis_A_vers_B = np.divide(
+        somme_recompense_action_a_depuis_A_vers_B,
+        nb_de_fois_action_a_depuis_A_vers_B,
+        out=np.zeros_like
+        (
+            somme_recompense_action_a_depuis_A_vers_B,
+            dtype=float
+        ),
+        where=nb_de_fois_action_a_depuis_A_vers_B != 0)
 
-        Set_proba_deplacement_action_a_depuis_A_vers_B()
-        Set_moyenne_recompense_action_a_depuis_A_vers_B()
+    Q = Q_OLD = np.zeros((LARGEUR, HAUTEUR, ACTIONS), dtype=float)
 
-        QiterPrecedente = Q.copy()
-        k = 0
-        variationAcceptable = False
-        while (not variationAcceptable):
-            Qcurrent = Q.copy()
-            variationAcceptable = True
+    variationinstable = True
+    while(variationinstable):
+        Q = np.zeros((LARGEUR, HAUTEUR, ACTIONS), dtype=float)
 
-            for an_proba_deplacement_action_a_depuis_A_vers_B in proba_deplacement_action_a_depuis_A_vers_B:
-                ptA_prob, ptB_prob, action_prob, proba = an_proba_deplacement_action_a_depuis_A_vers_B
+        # PosX, PosY for E, E' for a
+        for pos_x_A in range(0, LARGEUR):
+            for pos_y_A in range(0, HAUTEUR):
+                for a in range(0, ACTIONS):
+                    for pos_x_B in range(0, LARGEUR):
+                        for pos_y_B in range(0, HAUTEUR):
+                            MAX_Q_OLD = max(
+                                [Q_OLD[pos_x_B, pos_y_B, a_prime] for a_prime in range(0, ACTIONS)]
+                            )
 
-                for an_moyenne_recompense_action_a_depuis_A_vers_B in moyenne_recompense_action_a_depuis_A_vers_B:
-                    ptA_moy, ptB_moy, action_moy, moy = an_moyenne_recompense_action_a_depuis_A_vers_B
+                            SOMME_MOY = (
+                                moy_recompense_action_a_depuis_A_vers_B[pos_x_A, pos_y_A, a, pos_x_B, pos_y_B] + GAMMA * MAX_Q_OLD
+                            )
 
-                    if ListeIsEqual(ptA_prob, ptA_moy) and ListeIsEqual(ptB_prob, ptB_moy) and action_prob == action_moy:
-                        max = max_Q_eprime_aprime(Qcurrent, etats[k][0])
-                        Q[k][action] += proba * (moy + max)
-                        Qcurrent =  Q.copy()
-                        #Q[I, X, Y, A] += proba * (moy + Q[I, X + 1, Y + 1, A].moy())
+                            Q[pos_x_A, pos_y_A, a] += proba_deplacement_action_a_depuis_A_vers_B[pos_x_A,pos_y_A, a, pos_x_B, pos_y_B] * SOMME_MOY
 
-            # breakpoint()
-            QDiff = np.subtract(Qcurrent, QiterPrecedente)
-            for i in range (0, len(QDiff)):
-                for j in range (0, len(QDiff[i])):
-                    if QDiff[i][j] >= 0.01:
-                        variationAcceptable = False
-                        break
-            k += 1
+        variationinstable = np.any(np.abs(Q - Q_OLD) > 0.01)
+        Q_OLD = Q.copy()
 
-    return reward
-
-
-def max_Q_eprime_aprime(Q, ptB) -> int:
-    global moyenne_recompense_action_a_depuis_A_vers_B
-    max = -10000
-
-    for recomp_list in moyenne_recompense_action_a_depuis_A_vers_B:
-        ptB_recomp = recomp_list[1]
-        if not ListeIsEqual(ptB_recomp, ptB):
-            continue
-
-        if recomp_list[3] > max:
-            max = recomp_list[3]
-
-    return max
-
+    return Q
 
 
 #####################################################################################
 #
 #  Mise en place de l'interface - ne pas toucher
 
-
+QEA = SimulGame(100000)
 AfficherPage(0)
-Window.after(500, JeuClavier)
+Window.after(500, JeuIA)
 Window.mainloop()
